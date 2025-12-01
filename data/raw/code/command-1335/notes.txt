@@ -1,0 +1,118 @@
+Announcements
+
+1. I have OH tomorrow, 1-3pm. Meserve 335.
+2. Your lab on Monday is on Builders, today's topic.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Problem: I wish I could separate the I/O part of my controller
+         from the part that knows how to execute commands.
+
+Solution: Command Design Pattern
+
+1. Create an interface for all of our commands and it has one method:
+    void execute(... whatever is needed to execute any command...)
+
+2. For each command we wish to execute, create a class
+   that implements the command interface. If the command
+   needs extra information, pass it into the constructor.
+
+3. In the controller, when a command is recognized, create the
+    corresponding command object. Execute it at the end of the
+    switch statement.
+
+
+
+
+
+Problem: I wish I had a way to allow the client to customize an object.
+
+Solution: Make a Builder for the object.
+
+1. Say Foo is the object you want to customize. Create a new class called
+   FooBuilder.
+
+2. Add fields to FooBuilder corresponding to the customization options.
+
+3. For every customization you want to allow a client to do, create
+   the following method:
+
+   public FooBuilder <insert-meaningful-name-of-option> (... args needed for customization...) {
+        //... customize as needed
+        return this;
+   }
+
+4. If there are default values for your customizations, add a constructor to initialize them.
+
+   public FooBuilder() {
+    //... init fields to defaults if possible
+   }
+
+5. Add the build() method to construct the object.
+
+   public Foo build() {
+        return new Foo(... args derived from fields ...);
+   }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

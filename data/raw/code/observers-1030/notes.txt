@@ -1,0 +1,70 @@
+Announcements
+
+1. Come about 10-15 minutes early to the exam. Exam closes right at 8pm (DAS is the exception)
+   Bring your NU ID card to the exam. You will need a PIN and we need to verify your identity.
+   I will provide BLUE scrap paper for the exam (thank the trees for their service) but Churchill
+   desks are a little cramped, so mileage may vary.
+
+2. No TA office hours Thursday or Friday.
+    - Thursday they are proctoring.
+    - Friday they are grading. (Thank them for their sacrifice)
+
+3. I have office hours today 3-5pm. Meserve 335.
+4. Lab 6 published. Useful if you want to use GitHub for your project.
+    - Repos must be private or it's an academic integrity violation!
+
+Topics
+- Observer Pattern
+- Observers and GUIs
+- Keyboard events
+
+Next Time
+- Drawing on a JPanel (crucial for HW6)
+- In-class exercise on March 10th!
+
+
+
+
+
+
+
+
+Problem: I have classes A and B. I wish A could react to events from B.
+
+Solution: Observer Pattern
+
+1. Let A be called the Observer, B called the Subject.
+
+2. Define an interface of Actions that detail all relevant events from B.
+
+3. To your Subject, add a method to subscribe to the Subject.
+
+    public void subscribe(Actions observer) {...}
+
+4. To your Subject, any time the Subject must notify the Observer a relevant event occured,
+    call the related method from the Actions interface on the observer.
+
+5. To your Observer, implement the Actions interface. The implementation of those methods
+    are the reactions to the event.
+
+6. Finally, SOMEWEHRE in your code, have the Observer subscribe to the Subject.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

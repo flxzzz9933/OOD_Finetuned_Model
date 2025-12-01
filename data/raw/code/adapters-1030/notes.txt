@@ -1,0 +1,111 @@
+Announcements
+
+1. I have OH Friday, 1-3PM in my office.
+2. HW6 Common Q&As
+    - Your stub controller should NOT be playing the game!
+    - Your strategies are not players. They shouldn't play the game!
+    - Where do strategies live? --> A package outside of MVC b/c it's all for the player!
+    - Can you test the view?
+    - Can you test the stub controller given what it's supposed to do?
+    - What is left to test? :)
+3. Final lab is on Monday on adapters. (8AM lab people REJOICE!)
+4. Midterm 2 is on 04/02, 6-8PM. Let me know of conflicts ASAP!
+    - Those who need rooms for the DAS will be contacted by Friday.
+
+Topics
+- Adapters in general
+- Adapters in MVC (will carry us over to Monday, bring laptops)
+
+
+Adapter: a class that makes one class behave like another
+
+1. Figure out what you are adapting from (adaptee) and what you are adapting to (target).
+2. Reuse code from adaptee and implement the behaviors of the target.
+
+Class adapter: an adapter that inherits from the adaptee class
+Object adapter: an adapter that composes with an adaptee object
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Midterm topics: Everything from Exam 1 plus
+- Observer pattern
+- Strategies
+- Decorators
+- Adapters (today + Monday)
+- (From Exam 1, but to emphasize) interface and class design
+- (From Exam 1, but to emphasize) Writing tests
+
+GUIs are NOT ON THE EXAM!
+
+Frequently Asked Questions:
+
+Q: Practice Exam?
+A: Of course! Practice Exam open up next Tuesday on Canvas.
+
+Q: Cheat sheet?
+A: 8.5 inch by 11 inch paper, double-sided. (Regular printer paper)
+
+Q: Scratch paper?
+A: I'll provide scratch paper for you.
+
+Q: General practice?
+A: This exam is heavier on the design. Like what you did for HW5.
+   So consider taking previous specifications and designing classes for them.
+   For example, HW2 does give the specification for PokerTriangles. Design
+   your OWN interface. What choices did you make and can you back them up
+   using the specification itself?
+
+Q: Review session?
+A: Yes. Next Thursday, Monday, and Wednesday of the exam.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

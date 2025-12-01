@@ -1,0 +1,57 @@
+Turtle graphics uses an alternative system of measuring and
+drawing instead of the conventional Cartesian coordinate system.
+
+Turtle graphics is based on the notion of a turtle moving
+on screen. At any given time, the turtle has a position
+and a direction in which it is pointing. The turtle can walk
+only in the direction that it is pointing (i.e. along a
+straight line). It can change its direction by turning
+in its place. It is also able to save its current state and
+able to return to it.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+The controller for this turtle program must perform the following commands
+
+- "q" or "Q" for quitting the program.
+- "move <distance>" where distance is a double and moves the turtle
+    in a straight line the given distance without drawing
+- "turn <angle> where angle is a double and turns the turtle counter-clockwise
+    the given amount of degrees
+- "trace <distance>" where distance is an integer and moves the turtle
+    in a straight line the given distance WHILE drawling
+- "showLines" which prints the lines drawn to System.out
+- "save" which saves the turtle's current state
+- "retrieve" which retrieves the turtle's saved state, returning it to that state
+- If you get none of these commands, print an error message to System.out
+
+NOTE: Assume every command with arguments will always give you the correct
+      type of data. (angle/distance are double/int respectively always)

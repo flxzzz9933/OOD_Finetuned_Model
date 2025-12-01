@@ -1,0 +1,57 @@
+Announcements
+
+1. HW3 is due tomorrow 8:59PM.
+2. Don't forget to submit your lab.
+   Grade for a single lab = (style + attendance).
+       If nothing submitted, 0.
+       If trivial code, starter code, or wrong assignment code submitted, 0.
+2. Midterm is on the 27th (6-8pm)! Details to follow on Thursday.
+
+Topics
+
+Aside: Abstracting Tests
+Inheritance vs. Composition
+
+
+Problem: I want to reuse code but I don't want to or cannot inherit from the class.
+
+Solution: Composition
+
+1. In your new class, add a field of the type you want to reuse. This is called a delegate.
+
+2. In your new class, whenever you want to reuse code, call the delegate.
+
+
+
+
+
+We are keeping databases for students and employees. This means we have a Student class
+and Employee class.
+
+
+1. I want to make a Faculty class. Do I inherit or compose? And with what?
+    - Inherit makes sense since Faculty IS-A employee.
+2. Say we want to make a Student page with their details. Do I inherit or compose?
+    - Composition makes sense since a student page IS NOT a student.
+3. Say I want to make a record of a class section. Do I inherit or compose?
+    - Composition makes sense since a class HAS-A student AND HAS-A faculty.
+4. Students can also be employees. So we want a StudentEmployee Record. Inherit or compose?
+    - inherit from Student, compose with Employee (b/c they were a student first)
+    - inherit from Employee, compose with Student
+    - compose with both (but lose any client-side code reuse of Student and Employee)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

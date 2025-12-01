@@ -1,0 +1,171 @@
+Announcements
+
+0. Exam is TONIGHT 6-8pm in Churchill 103 for your section.
+
+1. Come about 10-15 minutes early to the exam. Exam closes right at 8pm (DAS is the exception)
+   Bring your NU ID card to the exam. You will need a PIN and we need to verify your identity.
+   I will provide BLUE scrap paper for the exam (thank the trees for their service) but Churchill
+   desks are a little cramped, so mileage may vary.
+
+2. No TA office hours Thursday or Friday.
+    - Thursday they are proctoring.
+    - Friday they are grading. (Thank them for their sacrifice)
+
+3. I have office hours Friday 1-3pm. Meserve 335.
+
+
+Topics
+- Keyboard events
+- Testing
+- Practicing with Turtles
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Problem: I have classes A and B. I wish A could react to events from B.
+
+Solution: Observer Pattern
+
+1. Let A be called the Observer, B called the Subject.
+
+2. Define an interface of Actions that detail all relevant events from B.
+
+3. To your Subject, add a method to subscribe to the Subject.
+
+    public void subscribe(Actions observer) {...}
+
+4. To your Subject, any time the Subject must notify the Observer a relevant event occured,
+    call the related method from the Actions interface on the observer.
+
+5. To your Observer, implement the Actions interface. The implementation of those methods
+    are the reactions to the event.
+
+6. Finally, SOMEWEHRE in your code, have the Observer subscribe to the Subject.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class YoutubeChannel {
+
+    private List<VideoNotification> subs;
+
+    public Video getVideoForId(String id) {
+
+    }
+
+    public void publishNewVideo(Video vid) {
+        // code for publishing a video
+        ...
+        for(VideoNotification sub : subs) {
+            sub.newVideoAvail("Sup gang.", this, id); //an event occured
+        }
+    }
+
+    public void subscribe(VideoNotification sub) {
+        subs.add(sub);
+    }
+
+}
+
+
+
+
+Problem : I have two classes A and B. I want A to react to events given by B.
+
+Solution: Observer Design Pattern
+
+1. Call A the Observer and B the Subject.
+
+2. Define an Actions interface where each behavior is an event produced by B.
+
+3. In the Subject, define a method to add an Observer to the Subject.
+
+    e.g. public void subscribe(Actions observer) { ... }
+
+4. In the Subject (or helper classes of the Subject), call the methods of the Actions interface
+    to indicate the event has occurred.
+
+5. Have the Observer implement the Actions interface. In each method, implement the reaction
+    to the corresponding event indicated by the method.
+
+6. SOMEWHERE in your code, have the Observer added to the Subject.
+
+    e.g. subject.subscribe(observer);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,469 @@
+Lecture 10: The Command Design Pattern
+Java source (.zip)
+Objectives of the lecture
+This lecture starts by working out the design of a model and controller of a new small application in detail. It streamlines code in the controller in several iterations to introduce the command design pattern.
+
+1 Context of the example program
+This lecture uses the example of turtle graphics. Turtle graphics uses the notion of a turtle moving on a 2D plane. At any point in time, the turtle occupies a fixed position on the plane, and points in some direction. The turtle has limited mobility: it is able to turn in its place, and move only in the direction that it is pointing.
+
+Turtle graphics is used to measure and draw in various applications. Many such applications find it convenient to specify movement relative to current position and direction (as the turtle) instead of absolute Cartesian coordinates. For example, driving directions provide navigation relative to the current position and direction (“Drive 0.3 miles”, “Take left onto...”).
+
+1.1 Basic Design
+Based on the basic operations identified above for turtle model, we begin by designing an interface for the model of our program:
+
+/**
+ * This interface specifies the operations on a 2D turtle
+ * <p>
+ * A 2D turtle is characterized by a position (x,y) and a
+ * heading (where it is looking).
+ * <p>
+ * It can be asked to draw the path it has moved using one of
+ * the commands below.
+ */
+public interface TurtleModel {
+    /**
+     * Move the turtle by the specified distance along its
+     * heading. Do not change heading
+     *
+     * @param distance
+     */
+    void move(double distance);
+
+
+    /**
+     * Turn the turtle's heading by the given angle.
+     * A positive angle means counter-clockwise
+     * turning. The turtle turns in place, i.e.
+     * it does not change position.
+     *
+     * @param angleDegrees
+     */
+    void turn(double angleDegrees);
+
+    /**
+     * Save the current turtle state (position + heading)
+     */
+    void save();
+
+    /**
+     * Retrieve the last saved turtle state (position + heading)
+     */
+    void retrieve();
+
+    /**
+     * Get the current position of the turtle
+     *
+     * @return
+     */
+    Position2D getPosition();
+
+  /**
+   * Get the current heading of the turtle
+   *
+   * @return
+   */
+    double getHeading();
+}
+The Position2D class represents a single, immutable 2D position.
+
+/**
+ * This class represents a 2D position
+ */
+public final class Position2D {
+  private final double x;
+  private final double y;
+
+  /**
+   * Initialize this object to the specified position
+   */
+  public Position2D(double x, double y) {
+    this.x = x;
+    this.y = y;
+  }
+
+  /**
+   * Copy constructor
+   */
+  public Position2D(Position2D v) {
+    this(v.x, v.y);
+  }
+
+
+
+  public double getX() {
+    return x;
+  }
+
+  public double getY() {
+    return y;
+  }
+
+
+  @Override
+  public String toString() {
+    return String.format("(%f, %f)", this.x, this.y);
+  }
+
+  @Override
+  public boolean equals(Object a) {
+    if (this == a) {
+      return true;
+    }
+    if (!(a instanceof Position2D)) {
+      return false;
+    }
+
+    Position2D that = (Position2D) a;
+
+    return ((Math.abs(this.x - that.x) < 0.01) && (Math.abs(this.y - that.y) < 0.01));
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(this.x, this.y);
+  }
+}
+We implement the TurtleModel interface as a SimpleTurtle class.
+
+/**
+ * This class manages a 2D turtle and implements all
+ * its associated operations
+ */
+public class SimpleTurtle implements TurtleModel {
+  // the position of the turtle
+  private Position2D position;
+  // the heading of the turtle in degrees
+  private double heading;
+  // stacks to save and retrieve turtle states
+  Stack<Position2D> stackPositions;
+  Stack<Double> stackHeadings;
+
+  /**
+   * Initializes the turtle to the default state.
+   * Default state = position (0,0) and heading (0) meaning
+   * looking in the +X direction.
+   */
+  public SimpleTurtle() {
+    this(new Position2D(0, 0), 0);
+  }
+  /**
+   * Initializes the turtle to the given position and heading.
+   */
+  public SimpleTurtle(Position2D startPos, double startHeading) {
+    position = Objects.requireNonNull(startPos);
+    heading = startHeading;
+    stackPositions = new Stack<>();
+    stackHeadings = new Stack<>();
+  }
+
+  @Override
+  public void move(double distance) {
+    //trigonometry to move by distance along angle
+    double x = distance * Math.cos(Math.toRadians(heading));
+    double y = distance * Math.sin(Math.toRadians(heading));
+
+    position = new Position2D(position.getX() + x, position.getY() + y);
+  }
+
+  @Override
+  public void turn(double angleDegrees) {
+    heading += angleDegrees;
+  }
+
+  @Override
+  public void save() {
+    stackPositions.push(position);
+    stackHeadings.push(heading);
+  }
+
+  @Override
+  public void retrieve() {
+    if ((stackPositions.isEmpty()) || (stackHeadings.isEmpty())) {
+      throw new IllegalArgumentException("no state to retrieve");
+    }
+    position = stackPositions.pop();
+    heading = stackHeadings.pop();
+  }
+
+  @Override
+  public Position2D getPosition() {
+    return position;
+  }
+
+  @Override
+  public double getHeading() { return heading;}
+}
+1.2 Enhancement
+The above turtle model is able to move and turn, but is not able to draw anything. Although drawing is within the scope of the view, the model must provide it with the data to draw. In this specific example, our turtle must trace its path, and provide a way for the client to retrieve its traces (in the form of lines).
+
+Specifically we need the following operations:
+
+void trace(double distance);
+List<Line> getLines();
+It may be tempting to simply add these methods to the TurtleModel interface and implement them in the SimpleTurtle class. However doing so has several problems:
+
+We no longer have a turtle without the capability to draw. Clients that currently use TurtleModel and SimpleTurtle now have extra operations that is not relevant. This violates the Interface Segregation principle.
+Editing code that is in use is recipe for disaster. If we accidentally broke what was previous working, it affects client code. This violates the Open for Extension, Closed for Modification principle.
+How do we add these operations? We extend the existing interface and then implement it by reusing the existing implementation (with inheritance).
+
+
+public interface TracingTurtleModel extends TurtleModel {
+  /**
+   * Move the turtle by the specified distance along its
+   * heading. Do not change heading.
+   * Draw a line from its initial position to its
+   * final position.
+   *
+   * @param distance
+   */
+  void trace(double distance);
+
+  /**
+   * Get the lines traced by this turtle, caused by the
+   * trace method above.
+   *
+   * @return a list of {@code Line} objects, in the order they were drawn.
+   */
+  List<Line> getLines();
+}
+
+public class SmarterTurtle extends SimpleTurtle implements TracingTurtleModel {
+  public SmarterTurtle() {
+    super();
+    lines = new ArrayList<Line>();
+  }
+
+
+  @Override
+  public void trace(double distance) {
+    Position2D cur = this.getPosition();
+    move(distance);
+    lines.add(new Line(cur, this.getPosition()));
+  }
+
+  @Override
+  public List<Line> getLines() {
+    return new ArrayList<>(lines);
+  }
+
+  //list of lines traced since this object was created
+  List<Line> lines;
+}
+2 Controller
+We offer a text-based synchronous controller for our application. The application (through the controller) has the following loop:
+
+Take a one-word command from the user. This command is one of “move”, “turn”, “trace”, “show” and “quit”.
+Depending on the command, take additional input (e.g. “move” requires a distance to move).
+Call the appropriate operation on the model, or quit (if the command is “quit”).
+This results in the following code:
+
+public class SimpleController {
+  public void go() {
+    Scanner s = new Scanner(System.in);
+    TracingTurtleModel m = new SmarterTurtle();
+    while (s.hasNext()) {
+      String in = s.next();
+      switch(in) {
+        case "q":
+        case "quit":
+          return;
+        case "show":
+          for (Line l : m.getLines()) {
+            System.out.println(l);
+          }
+          break;
+        case "move":
+          try {
+            double d = s.nextDouble();
+            m.move(d);
+          } catch (InputMismatchException ime) {
+            ...
+          }
+          break;
+        case "trace":
+          try {
+            double d = s.nextDouble();
+            m.trace(d);
+          } catch (InputMismatchException ime) {
+            ...
+          }
+          break;
+        case "turn":
+          try {
+            double d = s.nextDouble();
+            m.turn(d);
+          } catch (InputMismatchException ime) {
+            ...
+          }
+          break;
+        default:
+          System.out.println(String.format("Unknown command %s", in));
+          break;
+      }
+    }
+  }
+}
+3 Scaling up the controller
+Imagine if we support additional text commands in the controller. Although the current set of supported commands use all available operations in the model (except save and retrieve), we can support new drawing commands at the controller level. For example, drawing a square is a sequence of 4 move and 4 turn operations on the model. Instead of letting the user draw it as a sequence of 8 text commands, we could offer it as a new text command.
+
+switch(in) {
+...
+case "square":
+    try {
+      double d = s.nextDouble();
+      m.trace(d);
+      m.turn(90);
+      m.trace(d);
+      m.turn(90);
+      m.trace(d);
+      m.turn(90);
+      m.trace(d);
+      m.turn(90);
+    } catch (InputMismatchException ime) {
+      ...
+    }
+    break;
+}
+The possibilities are now endless! We can support similar higher-level drawing text commands. Every such text commands adds a new case to our switch statement. The number of lines of code in each case statement depends on the complexity of the text command (e.g. the square text-command added 13 lines of code). As a result, the switch statement quickly grows in size. Moreover the go method is increasingly incohesive.
+
+4 The Command Design Pattern
+In order to make each case statement shorter, we can put all its code into a separate helper method. Since all the helper methods operate on the model, we pass the model object to them. Also since some of the text command require additional input, we pass the additional input to each of them (in an attempt to make their signatures the same). The switch statement would now become:
+
+switch(in) {
+  case "move":
+      double d = s.nextDouble();
+      moveHelper(d,m);
+      break;
+  case "turn":
+      double d = s.nextDouble();
+      traceHelper(d,m);
+      break;
+  ..
+}
+We can now characterize each such helper method as follows: Take the model object and an additional piece of data, and execute a set of operations on the model. Note that although the operations that each helper method executes are different, all of the helper methods can be characterized this way. Since the methods differ only by name we can unify them under a single interface that has a method of the same signature: void go(TracingTurtleModel model);.
+
+Design-wise, how can we justify the purpose of such an interface? It represents a high-level command: a set of operations that must be executed. This is an example of the command design pattern. This pattern unifies different sets of operations under one umbrella, so that they can be treated uniformly.
+
+public interface TracingTurtleCommand {
+  void go(TracingTurtleModel m);
+}
+We then implement this interface, once for each text command. Each implementation would take additional data during instantiation.
+
+public class Move implements TracingTurtleCommand {
+  double d;
+
+  public Move(Double d) {
+    this.d = d;
+  }
+
+  @Override
+  public void go(TracingTurtleModel m) {
+    m.move(this.d);
+  }
+}
+
+public class Trace implements TracingTurtleCommand {
+  double d;
+
+  public Trace(Double d) {
+    this.d = d;
+  }
+
+  @Override
+  public void go(TracingTurtleModel m) {
+    m.trace(this.d);
+  }
+
+  ...
+
+}
+Now we can change the logic of our controller to:
+
+Take a one-word command from the user.
+Create the corresponding TracingTurtleCommand object..
+Execute the command object.
+String in = s.next();
+try {
+  switch (in) {
+    case "q":
+    case "quit":
+      return;
+   case "show":
+     for (Line l : m.getLines()) {
+        System.out.println(l);
+     }
+     break;
+   case "move":
+      cmd = new Move(s.nextDouble());
+      break;
+   case "trace":
+      cmd = new Trace(s.nextDouble());
+      break;
+   case "turn":
+      cmd = new Turn(s.nextDouble());
+      break;
+   case "square":
+      cmd = new Square(s.nextDouble());
+      break;
+   default:
+      System.out.println(String.format("Unknown command %s", in));
+      cmd = null;
+      break;
+  }
+  if (cmd != null) {
+    cmd.go(m); //execute the command
+    cmd = null;
+  }
+} catch (InputMismatchException ime) {
+  System.out.println("Bad length to " + in);
+}
+4.1 Advantages of the command design pattern
+As the above example shows, the command design pattern offers several advantages:
+
+The command design pattern has a unifying effect, making unrelated lines of code appear as if working towards the same purpose. This increases cohesion: the controller is no longer doing 1 of 10 unrelated things, but executing commands.
+The command design pattern promotes delegation. Details of each command are now kept in separate classes, instead of all appearing within the controller. This allows us to support new, more complicated commands such as drawing fractal objects without cluttering the controller (see the attached code for the Koch snowflake).
+The command design pattern extends its unifying effect by allowing common operations across commands.
+For example we can think of supporting a new text command: undo the last operation. Although our model supports this in a primitive way, the controller should be able to undo entire sequences of model operations (such as square). Although the details of undoing differ with the operation being undone, we can think of the operation itself at the “command” level.
+
+We may implement this in one of two ways:
+
+Extend the TracingTurtleCommand interface to offer an undo() operation. Each command would determine how to undo itself.
+Store a list of command objects in the controller and undo them.
+Again, note that both of these ways use the abstraction created by the command design pattern.
+
+5 Improving the controller
+Although we made our controller code more cohesive, the switch statement will still grow as more text commands are supported.
+
+Consider what virtually every case is doing: it takes additional input from a Scanner object, and creates a command object. We can conceptualize this operation as a method: TracingTurtleCommand create(Scanner sc).
+
+If we have such methods for each case block, then the switch statement is simply executing the correct method depending on the entered text command. We can store all such text-command -> method in a map of function objects.
+
+Map<String, Function<Scanner, TracingTurtleCommand>> knownCommands;
+
+    knownCommands = new HashMap<>();
+    knownCommands.put("move",s->new Move(s.nextDouble()));
+    knownCommands.put("turn",s->new Turn(s.nextDouble()));
+    knownCommands.put("trace", s->new Trace(s.nextDouble()));
+    knownCommands.put("square", s -> new Square(s.nextDouble()));
+Then our controller logic becomes:
+
+Take a one-word command from the user.
+Find if the command exists in the map. If so, execute the corresponding function object to get the command object.
+Execute the command object.
+The second step above becomes a map lookup, instead of a switch statement!
+
+while(scan.hasNext()) {
+  TracingTurtleCommand c;
+  String in = scan.next();
+  if (in.equalsIgnoreCase("q") || in.equalsIgnoreCase("quit"))
+    return;
+  Function<Scanner, TracingTurtleCommand> cmd =
+  knownCommands.getOrDefault(in, null);
+  if (cmd == null) {
+    throw new IllegalArgumentException();
+  } else {
+    c = cmd.apply(scan);
+    c.go(m);
+  }
+}
+Adding support for a new text command is now as easy as adding a new entry to the map! This allows us to quickly assemble a list of supported text commands for a controller. The controller’s logic does not change depend on the number and complexity of supported text commands.

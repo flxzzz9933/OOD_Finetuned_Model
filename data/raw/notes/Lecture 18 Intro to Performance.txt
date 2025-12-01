@@ -1,0 +1,358 @@
+Lecture 18: Intro to Performance
+Java source (.zip)
+Objectives of the lecture
+This lecture takes an empirical view of the goodness of a design and implementation choice. It presents details of an experiment to profile the performance of a component in a rudimentary way, and presents its uses and limitations.
+
+1 A performance problem
+In Assignment 2, your view’s toString() method likely had to accumulate a string in a loop. Stripped down to its essence, building the string might have looked something like this:
+
+String result = "";
+
+for (...) {
+    ...
+    result += ...;
+    ...
+}
+
+return result;
+That is, the most straightforward thing to do, when we need to accumulate a string, is often to build it up character-by-character via string appends. Naively, we might expect this to be quite efficient: after all, the loop is doing a constant amount of work each iteration — just a single string-append! — and we surely needed to loop over every character of the input string, so this must be as efficient as it gets.
+
+Unfortunately, this analysis is too simplistic: the actual performance of this approach scales terribly. For example, here is are benchmark results for an implementation of the format method on template strings of length 1000, 2000, 3000, and 4000, with two different "densities" of % signs (14
+ versus 150
+):
+
+Accumulating strings character by character
+
+The lines represent running time, so longer lines are worse. As we can see, the running time of this method superlinearly—when the template string doubles in length, the running time more than doubles. This is an inherent feature of some computational problems, but it isn’t inherent to the task of building a string, and in fact we can do much, much better.
+
+Somehow, what seemed like a single, cheap operation isn’t. To see why we’re getting such bad performance, we need to consider what is happening under the hood. In Java (and many programming languages), a string is represented as an array of characters. The Java String class is immutable, which means that when we append two strings, it allocates a fresh, new String object to hold the result. Under the hood, this entails allocating a new array with enough space to hold the characters from both strings, and then copying the contents into it. This operation takes time proportional to the length of the resulting string. When we accumulate a string in a loop, this means that we are allocating a new string in each iteration of the loop, and the size of that new string increases each time. Overall, to accumulate a string of length 𝑛
+, character by character, this will do 𝑛
+ copies, allocating new strings of length 1, 2, …
+, 𝑛
+. Adding this up, we get the time 𝑇(𝑛)
+ to accumulate a string of length 𝑛
+,
+
+𝑇(𝑛)=∑𝑖=1𝑛𝑐𝑖=𝑐𝑛(𝑛+1)2
+
+where 𝑐
+ represents some constant factor involved in each operation (since the exact time to allocate a string and copy its contents depends on details of the particular machine and environment in which we are running). Because the above expression is quadratic in 𝑛
+, this explains why our format method scales superlinearly.
+
+2 A mathematical digression
+You likely have previously seen the formula above, stating that the sum of the first 𝑛
+ numbers is 𝑛(𝑛+1)2
+. Take a moment to consider how to prove such a formula. Here is one common proof:
+
+When 𝑛=1
+, ∑1𝑖=1=1(1+1)2=1
+. So our base case is satisfied.
+Assume inductively that the formula holds for 𝑛
+; show that it works for 𝑛+1
+:
+∑𝑖=1𝑛+1𝑖=(∑𝑖=1𝑛𝑖)+(𝑛+1)by induction=𝑛(𝑛+1)2+(𝑛+1)=𝑛(𝑛+1)2+2(𝑛+1)2=(𝑛+2)(𝑛+1)2
+
+This proof is straightforward, fairly simple...and utterly unenlightening: how did we guess the appropriate formula in the first place? Moreover, suppose we needed to solve a related problem (such as ∑𝑛𝑖=1𝑖2
+, or higher powers) — nothing about this proof is reusable.
+
+Another common proof, due to Carl Friedrich Gauss, goes as follows: pair off the first and last numbers of the range, the second and next-to-last numbers, etc:
+
+123⋮floor(𝑛/2)𝑛𝑛−1𝑛−2⋮ceil(𝑛/2)
+
+Each row sums to 𝑛+1
+, and there are 𝑛2
+ rows. Therefore the total sum is 𝑛(𝑛+1)2
+ as desired. This proof is a bit better: you don’t have to know the formula in advance in order to derive it, but you need some insight to see that arranging the numbers in this manner will be helpful.
+
+Here is an alternate proof, based on a technique called "telescoping". Consider the well-known fact
+
+(𝑛+1)2=𝑛2+2𝑛+1
+
+Now comes an odd observation — the following formula is also true:
+
+(𝑛)2=(𝑛−1)2+2(𝑛−1)+1
+
+Why bother with this? Because we can continue in this manner all the way down:
+
+(𝑛+1)2(𝑛−0)2(𝑛−1)212=(𝑛−0)2+2(𝑛−0)+1=(𝑛−1)2+2(𝑛−1)+1=(𝑛−2)2+2(𝑛−2)+1⋮=(𝑛−𝑛)2+2(𝑛−𝑛)+1
+
+Now we can apply something like Gauss’s technique, and sum all these equations together. But notice: most of the terms cancel each other out, because they appear on both sides of the equals signs. We are left with
+
+(𝑛+1)2=2((𝑛−0)+(𝑛−1)+⋯+(𝑛−𝑛))+(1+1+⋯+1)
+
+Or in other words,
+
+(𝑛+1)2=2(∑𝑖=1𝑛𝑖)+(𝑛+1)
+
+With just a little bit of algebra, we obtain the desired formula...without knowing in advance what the formula should be.
+
+Better yet, we can generalize this technique:
+
+(𝑛+1)3(𝑛−0)3(𝑛−1)313=(𝑛−0)3+3(𝑛−0)2+3(𝑛−0)+1=(𝑛−1)3+3(𝑛−1)2+3(𝑛−1)+1=(𝑛−2)3+3(𝑛−2)2+3(𝑛−2)+1⋮=(𝑛−𝑛)3+3(𝑛−𝑛)2+3(𝑛−𝑛)+1
+
+Again terms cancel, and we get
+
+(𝑛+1)3=3(∑𝑖=1𝑛𝑖2)+3(∑𝑖=1𝑛𝑖)+(𝑛+1)
+
+Conveniently, we can reuse the solution we just got for the second sum, and with a bit of algebra obtain the final formula for this form as well.
+
+Or in other words, with a bit of refactoring1, we can take a formula that was only of utility in one limited situation and instead obtain a proof technique that can be reused to solve several related problems.
+
+Analogously, finding the right spot in your program to refactor can lead to a profoundly useful point of leverage from which to improve your code. Let’s see how we might apply similar reasoning to our example string-appending problem above.
+
+3 Abstracting the problem
+In order to try other strategies for accumulating the string, we will now abstract our format(String) method over the string accumulation process. In particular, we define an interface for objects that provide a string accumulation service. The full interface provides several more useful methods, but to start out we need only two:
+
+public interface StringAccumulator {
+  /**
+   * Appends the given character to the end of the accumulated string.
+   *
+   * @param c the character to append
+   * @return a reference to {@code this} (for method chaining)
+   */
+  @Override
+  StringAccumulator append(char c);
+
+  /**
+   * Returns the accumulated string value. Should be the same as
+   * {@code #toString()}.
+   *
+   * @return the accumulated string value
+   */
+  String stringValue();
+}
+The idea is that using an object of a class that implements StringAccumulator, we can repeatedly append characters, potentially allowing the object to manage the accumulation in a more efficient way than repeated string appends, and then when we’re done, extract the resulting string2:
+
+StringAccumulator result = new ...StringAccumulator();
+
+for (...) {
+    ...
+    result.append(c);
+    ...
+}
+
+return result.stringValue();
+In order to demonstrate that our approach is sound, we first implement the interface in a class that uses the same string-appending technique that gave us the bad performance above:
+
+/**
+ * A string accumulator implementation that just stores the string. This is
+ * very simple to implement but will suffer the same poor performance as
+ * naive string appending.
+ */
+public final class StringStringAccumulator implements StringAccumulator {
+  private String contents = "";
+
+  @Override
+  public String stringValue() {
+    return contents;
+  }
+
+  @Override
+  public StringStringAccumulator append(char c) {
+    contents += c;
+    return this;
+  }
+}
+Of course, the above does not make our code run any faster, but it enables us to run our tests and ensure that abstracting over string accumulation doesn’t break our existing code. Once we know that is the case, we can try to implement the interface in a way that improves our string accumulation performance.
+
+4 Improving our technique
+The key to improving our string accumulation performance is to avoid allocating and copying each time the append(char) method is called. Instead, we will accumulate characters in an array, which we may allow to be larger than is necessary to hold the characters accumulated thus far. By trading space for time, we hope to speed up duration formatting.
+
+We start by writing an ArrayStringAccumulator class that uses a character array, rather than a String, to hold the characters:
+
+public class ArrayStringAccumulator implements StringAccumulator {
+  private char[] contents = new char[INITIAL_CAPACITY];
+  private int length = 0;
+}
+In this class, in addition to the char[] field contents holding the characters, we need the length field to keep track of how much of contents is currently filled with characters that we have accumulated. This will allow us to use an array that is not yet full, so that we can add more characters without reallocating and copying. Initially, contents points to a freshly allocated character array of some capacity (which doesn’t particularly matter, so long as it isn’t really large), and the length starts out at 0. We then have two public methods to implement.
+
+In order to get the accumulated String value, method stringValue() initializes a new string to the valid prefix of the array and returns that:
+
+@Override
+public final String stringValue() {
+  return String.valueOf(contents, 0, length);
+}
+The static String#valueOf(char[], int, int) method takes a character array, the offset where the new string should start, and a count of characters to include. We want the first length characters of array contents.
+
+We also need to implement the append(char) method, which adds a character to the end of the buffer. The buffer may or may not have to grow before we can add a character to it, so we will delegate to a private helper ensureCapacity(int) that expands the array to the requested capacity if necessary:
+
+@Override
+public final ArrayStringAccumulator append(char c) {
+  ensureCapacity(length + 1);
+  contents[length++] = c ;
+  return this;
+}
+The method ensures that we have room for one additional character, then stores it at the end of contents and increments the length field to record the fact that we have added a character. It returns this as required by the StringAccumulator interface.
+
+Now we need to implement ensureCapacity(int). We will express only a small amount of the growing logic here, delegating to two other methods to decide what size to expand to, and to do the expansion itself:
+
+/**
+ * Resizes the underlying array, if necessary, to ensure that the capacity
+ * exceeds the specified {@code minCapacity}.
+ *
+ * @param minCapacity lower bound for the new capacity
+ */
+public final void ensureCapacity(int minCapacity) {
+  if (contents.length < minCapacity) {
+    resize(determineNewCapacity(minCapacity));
+  }
+}
+If the capacity of the underlying array is sufficient to hold minCapacity characters, there is no need to expand. Otherwise, we delegate to method determineNewCapacity(int) to decide what size to grow to, and then to method resize(int) to do the actual growing. Method resize(int), in turn, can delegate to the static Arrays.copyOf(char[], int) method, which makes a copy of an array of the requested size:
+
+/**
+ * Resizes the underlying array to the given capacity.
+ *
+ * @param newCapacity the new capacity of the array
+ */
+private void resize(int newCapacity) {
+  contents = Arrays.copyOf(contents, newCapacity);
+}
+It remains to implement the determineNewCapacity(int) method, which determines what size to expand array contents to when expansion is necessary. (If we expand only to the needed capacity, we have merely reimplemented the nonperformant version of string accumulation that we started with. We’ll try that, among other things, just to be sure.) Because we would like to try a variety of array expansion strategies, we will abstract over this decision.
+
+5 Abstracting the expansion strategy
+Rather than implement one ArrayStringAccumulator class with a fixed expansion strategy, we will change the above to an abstract base class AbstractArrayStringAccumulator, which defers the implementation of the determineNewCapacity(int) method, and thus the expansion strategy, to its concrete subclasses. Thus, we rename class ArrayStringAccumulator to AbstractArrayStringAccumulator. Here is the whole class at this point3:
+
+public abstract class AbstractArrayStringAccumulator
+  implements StringAccumulator
+{
+  private char[] contents = new char[INITIAL_CAPACITY];
+  private int length = 0;
+
+  /**
+   * The initial array capacity.
+   */
+  public final static int INITIAL_CAPACITY = 10;
+
+  @Override
+  public final String stringValue() {
+    return String.valueOf(contents, 0, length);
+  }
+
+  @Override
+  public final String toString() {
+    return stringValue();
+  }
+
+  @Override
+  public final ArrayStringAccumulator append(char c) {
+    ensureCapacity(length + 1);
+    contents[length++] = c ;
+    return this;
+  }
+
+  /**
+   * Returns the current capacity of the string accumulator, after which
+   * expansion will be necessary.
+   *
+   * @return the current capacity
+   */
+  public int capacity() {
+    return contents.length;
+  }
+
+  public final void ensureCapacity(int minCapacity) {
+    if (contents.length < minCapacity) {
+      resize(determineNewCapacity(minCapacity));
+    }
+  }
+
+  private void resize(int newCapacity) {
+    contents = Arrays.copyOf(contents, newCapacity);
+  }
+
+  /**
+   * Returns the capacity to expand to, given the requested minimum
+   * capacity.
+   *
+   * @param minCapacity the requested minimum capacity
+   * @return the capacity to expand to
+   */
+  protected abstract int determineNewCapacity(int minCapacity);
+}
+In order to implement a concrete StringAccumulator class, it thus suffices to extend AbstractArrayStringAccumulator and override the determineNewCapacity(int) method to implement a particular expansion strategy. Note that we added a method capacity() in order to allow subclasses to find out the current capacity, since the actual representation array contents is private. (We don’t want subclasses to be able to mess with our invariants!)
+
+5.1 Four strategies for growing
+Now we can try several strategies for growing the array, and use benchmarks to compare them. Unsurprisingly, will first reimplement the naïve strategy of keeping the array at the exact size needed. (If nothing else, this continues to provide proof of concept for our abstractions.) We call this class ExactArrayStringAccumulator; if our understanding of the problem is correct, this will give us the same poor performance that we started with:
+
+/**
+ * A string accumulator class that always expands to exactly the
+ * necessary size to hold the current accumulated character sequence.
+ */
+public final class ExactArrayStringAccumulator
+  extends AbstractArrayStringAccumulator
+{
+  @Override
+  protected int determineNewCapacity(int minCapacity) {
+    return minCapacity;
+  }
+}
+Since we hypothesized that the source of the poor performance was frequent array expansions, one reasonable strategy might be to expand the array some larger but fixed step at a time. The strategy of class LinearArrayStringAccumulator is to expand to the smallest multiple of DEFAULT_STEP that will hold the requested minimum capacity:
+
+public final class LinearArrayStringAccumulator
+  extends AbstractArrayStringAccumulator
+{
+  public static int DEFAULT_STEP = 16;
+
+  @Override
+  protected int determineNewCapacity(int minCapacity) {
+    // (a + b - 1) / b computes ceil((double) a / b)
+    return ((minCapacity + DEFAULT_STEP - 1) / DEFAULT_STEP) * DEFAULT_STEP;
+  }
+}
+If we consider LinearArrayStringAccumulator carefully, we may notice that it still expands a linear number of times to build a string—just 16 times fewer times—which means that the ∑
+ sum that adds up to a quadratic expression still applies. If we want to expand fewer than a linear number of times, we need to grow less often still. One way to do this is by doubling, which ensures that to reach an array of size 𝑛
+ we grow only a logarithmic number of times. We’ll call this strategy DoublingArrayStringAccumulator:
+
+public final class DoublingArrayStringAccumulator
+  extends AbstractArrayStringAccumulator
+{
+  @Override
+  protected int determineNewCapacity(int minCapacity) {
+    return Integer.max(minCapacity, capacity() * 2);
+  }
+}
+As a final strategy, we might elect to allocate a sufficiently large array that expansion is unnecessary, at least in the cases where we know how large an array we are going to need. The version of AbstractArrayStringAccumulator that we just wrote does not provide a way for subclasses to influence the initial array size (though the full version here does). However, we can approximate this behavior up to a point by returning a sufficiently large value from determineNewCapacity(int) such that none of our benchmarks exceed it, and we will thus get exactly one reallocation, regardless of how large the string must grow. (The risk here is that this allocation is so large that it hurts our performance, but if that is the case, the benchmarks will show it.)
+
+public final class PreallocArrayStringAccumulator
+  extends AbstractArrayStringAccumulator
+{
+  @Override
+  protected int determineNewCapacity(int minCapacity) {
+    return Integer.max(minCapacity, 100_000);
+  }
+}
+5.2 Benchmarking the strategies
+Now that we have four strategies for growing the array, we would like to compare them. The benchmarks in StringAccumulatorBench build strings of several sizes using our array-growing strategies. Here are the results:
+
+Accumulating strings using several strategies
+
+As we can see, StringStringAccumulator and ExactArrayStringAccumulator perform very similarly to our original implementation of the format method, which is unsurprising, since each of them expands the string or array each time a character is added. The other implementations all look significantly faster but similar to each other, but if we want to see the difference between the linear-step strategy, the doubling strategy, and the prealloc strategy, then we need to try larger cases. In this benchmark, we increase the the size of the accumulated strings by a factor of 10:
+
+Accumulating larger strings using the fastest strategies
+
+Now we can see that LinearArrayStringAccumulator’s growth is similar to StringStringAccumulator’s and ExactArrayStringAccumulator’s, only with better constant factors. Expanding the string less often by a constant factor means that the growth in time has the same shape, merely scaled down (or starting from a smaller baseline). But eventually, for large enough strings, the strategy taken by LinearArrayStringAccumulator will become nonperformant. The doubling and prealloc strategies, on the other hand, are inherently linear, and no matter how much we expand, the time they take will be proportional to the size of the string they are building. The prealloc strategy may be faster by some constant factor, but with a significant decrease in flexibility, since it requires choosing a size up front.
+
+6 Applying our results
+Now that we have a good idea how our various expansion strategies perform, we should verify that they work not only when benchmarking mere string accumulation, but in the context for which we intended them, the duration format method. Here is a benchmark comparing our string accumulation classes with each other and with two classes from the Java library, StringBuilder and StringBuffer4:
+
+Duration formatting using different implementations of string
+accumulation
+
+As we can see, our string accumulation benchmark was valid for predicting the performance of a duration formatting benchmark (though whether that validity extends to "real-world" duration formatting is another question, which we won’t attempt to answer here).
+
+7 Differences between the code in this lecture and the full version that I’ve been linking to
+The code in this lecture is simplified from more comprehensive implementations of the same classes, which I have linked throughout. The differences are:
+
+The full StringAccumulator interface includes methods for appending not only single characters but CharSequences, which is an interface that includes Strings and other ways to represent (sequences of) characters.
+The full StringAccumulator interface extends the interface Appendable from the Java library. Appendable specifies a similar concept (but is slightly more complex). Extending Appendable is what allows us to use the same benchmarking code for our classes and for Java’s StringBuilder and StringBuffer, since those implement Appendable as well.
+The full version of AbstractArrayStringAccumulator defines a method initialCapacity(), which subclasses can override to choose a different initial capacity for the array than the default. The PreallocArrayStringAccumulator class overrides this method in order to preallocate a large array more elegantly than we did above.
+8 Conclusion
+This is merely an introduction to performance. In the next lecture, we will see how to reason about resource usage more formally, using the concept of asymptotic complexity and big-O notation.
+
+1Quite literally!
+
+2Can you see a similarity with the builder pattern here?
+
+3Note that the full version linked in the previous sentence is more comprehensive, but rather than explain the details here, I summarize some of the differences near the end of this lecture and leave understanding the details as an exercise for the reader.
+
+4What we have done here is, in fact, a simple reimplementation of Java’s StringBuilder. StringBuffer is similar—an older version of the same concept that is considered deprecated in favor of StringBuilder.

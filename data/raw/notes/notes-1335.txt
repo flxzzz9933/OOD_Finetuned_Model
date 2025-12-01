@@ -1,0 +1,178 @@
+Announcements
+
+1. HW6 out
+    - You have multiple view and observer examples on Canvas
+      modules, lab, and on course website.
+
+Topics
+- Strategies
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Strategies are function objects that at runtime decide how to
+implement a feature (e.g. how to DO something)?
+
+interface Strategy {
+    ... // the one function you want to implement
+}
+
+
+
+
+
+
+
+
+
+
+Decorators are classes that
+    - have the same type as what they decorate
+    - have as a field the object they decorate
+    - apply some change in behavior to some existing object
+
+e.g.
+
+class Decorator implements IBase {
+    IBase base;
+
+    public Decorator(IBase base) {
+        ....
+    }
+} // preferred because not dependent on implementation
+
+OR
+
+class Decorator extends Base {
+    Base base; //or a more general type if applicable
+
+    public Decorator(Base base) {
+        ...
+    }
+} // might be necessary, but dependent on the implementation
+
+
+
+
+
+
+
+
+
+
+
+
+interface Beverage {
+    Size size();
+    double price();
+}
+
+enum Size { SMALL, MED, LARGE };
+
+class Coffee implements Beverage { ... }
+class Tea implements Beverage { ... }
+
+Add-ons:
+- Milk
+- Cream
+- Sugar
+- Fruit
+- Syrups
+- Whipped Cream
+- Charcoal
+
+class MilkAdded implements Beverage {
+
+    private Beverage base;
+
+    public MilkAdded(Beverage base) {
+        this.base = base;
+    }
+
+    public Size size() {
+        return this.base.size():
+    }
+
+    public double price() {
+        return 1.00 + this.base.price();
+    }
+}
+
+class CharcoalAdded implements Beverage {
+
+    private Beverage base;
+
+    public CharcoalAdded(Beverage base) {
+        this.base = base;
+    }
+
+    public Size size() {
+        return this.base.size():
+    }
+
+    public double price() {
+        switch(this.base.size()) {
+            case SMALL : return this.base.price() + 15;
+            case MED: return this.base.price() + 20;
+            case LARGE: return this.base.price() + 3500;
+        }
+    }
+}
+
+
+// a tea with milk, sugar, honey
+new HoneyAdded(new SugarAdded(new MilkAdded(new Tea())));
+new SugarAdded(new MilkAdded(new HoneyAdded(new Tea())));
+
+// a coffee with milk
+new MilkAdded(new Coffee());
+
+MilkAdded, HoneyAdded, SugarAdded etc. are DECORATORS
+
+Decorators are classes that are and contain what they decorate to add or change existing behavior of
+that object.
+
+(Aside: It is common to have a builder to build a decorated object
+    because decorating an object implies adding customizability)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

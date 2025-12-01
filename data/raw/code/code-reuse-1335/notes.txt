@@ -1,0 +1,79 @@
+Announcements
+
+1. HW4 out today, due next Wednesday.
+    - Building variants of the model
+    - Last assignment with JUnit tests!
+2. Second project begins next week. Register a team of 2 on Handins!
+    - How late days work with group assignments.
+
+Topics
+- Practicing the mechanics of inheritance (and composition?)
+- Design Review of PokerTriangles representation
+
+
+
+
+
+
+
+
+
+Representation of Card
+
+- Rank(int) and Suit(enum)
+- Rank(enum) and Suit(enum)
+- Rank(int) and Suit(String)
+- Rank(enum) and Suit(String)
+- Rank(String, int) and Suit(enum) [an older design]
+
+How do you handle the fact Aces have two values?
+- Ranks can have multiple values
+- Handled specially when checking straights, but one value
+
+Should the Card keep track of its position on the board?
+    - No.
+    - Board already tracks the cards. Removal from the board would mean extra work.
+    - Don't want to add mutability to the card itself.
+
+
+Represenation of board
+
+- Card[][] // first index is row, second is column
+    - each row has exactly the right number of positions for a triangle
+    - each row has length sideLength
+    - List<int[]> that states the valid positions
+- List<List<Card>> // first index is row, second is column
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

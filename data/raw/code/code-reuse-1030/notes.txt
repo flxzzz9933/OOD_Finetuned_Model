@@ -1,0 +1,71 @@
+Announcements
+
+1. HW4 out today, due next Wednesday.
+    - Building variants of the model
+    - Last assignment with JUnit tests!
+2. Second project begins next week. Register a team of 2 on Handins!
+    - How late days work with group assignments.
+
+Topics
+- Practicing the mechanics of inheritance (and composition?)
+- Design Review of PokerTriangles representation
+
+
+
+
+
+
+
+
+
+Your Card representation
+
+- Rank and Suit (enums)
+- Rank and Suit (Strings) -- checked for correctness in constructor
+- Rank (int) and Suit (enum) -- 14 is an Ace
+
+Rank enum : How would you handle Aces?
+    - Only one value to make creating the deck correct
+    - Two values for Ace, but one value was only used for scoring
+    - Every value has String representation , high, and low integer values
+    - Only one value and just check specially in scoring for straight
+
+
+
+Representing the board
+
+Card[][] //first index is row, second is column
+    - each row had a different length
+    - each row had same length, but calculated valid positions
+List<List<Card>> // first index is row, second is column
+    - get method usage is a little messy and inconvenient
+    - set vs. add usage
+Map<Posn, Card>
+    - deal with out of bounds positions
+    - too abstract because it can be ANY shape
+A separate object (Card[][])
+    - add extra board behaviors or RESTRICT usage
+    - decomplexify the model
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

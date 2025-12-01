@@ -1,0 +1,378 @@
+Lecture 2: The essence of objects
+SlidesJava and ISL source (.zip)
+Objectives of this lecture
+In this lecture we will discuss a small, simple problem and design a solution using both functional and object-oriented design. This will allow us to compare and contrast them, and provide an insight about when to choose which design. We will also begin to see how programming languages used to implement these designs help in enforcing some of its constraints.
+
+1 Example: Formatting citations
+Suppose we want to represent two kinds of publications, in order to generate citations for them. There are two kinds of publications we want to work with:
+
+Books, which have a title, an author, a publisher, the publisher’s location, and the year of publication.
+Journal articles, which have a title, an author, and the journal’s name, volume number, issue number, and year.
+Using Intermediate Student Language with Lambda in the style of HTDP, we can create a data definition to represent publications:
+
+;; A Publication is one of:
+;; -- (make-book String String String String Number)
+;; -- (make-article String String String Number Number Number)
+(define-struct book [title author publisher location year])
+(define-struct article [title author journal volume issue year])
+
+;; Examples:
+(define rushdie.v1
+        (make-book "Midnight's Children" "Salman Rushdie"
+                   "Jonathan Cape" "London" 1980))
+(define turing.v1
+        (make-article "Computing machinery and intelligence"
+                      "A. M. Turing" "Mind" 59 236 1950))
+We would like to format citations in two styles, APA and MLA. For each of these, we can design a function that takes a publication and formats it as a string. Following the design recipe, we use the template for structural decomposition of Publications:
+
+;; process-publication: Publication -> ...
+;; Template for processing Publications
+(define (process-publication: pub)
+  (cond
+    [(book? pub)
+     (... (book-title pub) ... (book-author pub) ... (book-publisher pub) ...
+          (book-location pub) ... (book-year pub) ...)]
+    [(article? pub)
+     (... (article-title pub) ... (article-author pub) ...
+          (article-journal pub) ... (article-volume pub) ...
+          (article-issue pub) ... (article-year pub) ...)]))
+Then we instantiate the template for each of the two functions that we need:
+
+;; cite-apa: Publication -> String
+;; To format a publication for citation in APA style.
+(define (cite-apa pub)
+  (cond
+    [(book? pub)
+     (format "~a (~a). ~a. ~a: ~a."
+             (book-author pub) (book-year pub) (book-title pub)
+             (book-location pub) (book-publisher pub))]
+    [(article? pub)
+     (format "~a (~a). ~a. ~a, ~a(~a)."
+             (article-author pub) (article-year pub) (article-title pub)
+             (article-journal pub) (article-volume pub) (article-issue pub))]))
+
+;; cite-mla: Publication -> String
+;; To format a publication for citation in MLA style.
+(define (cite-mla pub)
+  (cond
+    [(book? pub)
+     (format "~a. ~a. ~a: ~a, ~a."
+             (book-author pub) (book-title pub) (book-location pub)
+             (book-publisher pub) (book-year pub))]
+    [(article? pub)
+     (format "~a. \"~a.\" ~a ~a.~a (~a)."
+             (article-author pub) (article-title pub) (article-journal pub)
+             (article-volume pub) (article-issue pub) (article-year pub))]))
+(The format function interpolates values into a format string, where each formatting escape ~a indicates where the next argument should be placed. ISL+𝜆
+’s format is documented here; the syntax of format strings is documented with Racket’s fprintf function.)
+
+Now let’s try it:
+
+> (cite-apa rushdie.v1)
+"Salman Rushdie (1980). Midnight's Children. London: Jonathan Cape."
+> (cite-mla rushdie.v1)
+"Salman Rushdie. Midnight's Children. London: Jonathan Cape, 1980."
+> (cite-apa turing.v1)
+"A. M. Turing (1950). Computing machinery and intelligence. Mind, 59(236)."
+> (cite-mla turing.v1)
+"A. M. Turing. \"Computing machinery and intelligence.\" Mind 59.236 (1950)."
+Great! The code above works. But now we have a problem. Software evolves, and a first specification rarely remains unchanged through the development process. It turns out that we need to handle a third kind of publication:
+
+Web pages, which have a title, a URL, and the date of download.
+Of course, updating our data definition to represent the new class of information is easy enough:1
+
+;; A Publication is one of:
+;; -- (make-book String String String String Number)
+;; -- (make-article String String String Number Number Number)
+;; -- (make-webpage String String String)
+(define-struct book [title author publisher location year])
+(define-struct article [title author journal volume issue year])
+(define-struct webpage [title url retrieved])
+
+;; Example:
+(define cs3500.v1
+  (make-webpage "CS3500: Object-Oriented Design"
+                "https://www.ccs.neu.edu/course/cs3500/"
+                "August 11, 2014"))
+That isn’t sufficient, though—we also need to update our code. In particular, we need to find each function that decomposes a Publication and modify it to handle the new case. That is, we must add a case to cite-apa for formatting web page citations in APA style:
+
+[(webpage? pub)
+ (format "~a. Retrieved ~a, from ~a."
+         (webpage-title pub) (webpage-retrieved pub) (webpage-url pub))]
+We also need to add a case to cite-mla for formatting web page citations in MLA style:
+
+[(webpage? pub)
+ (format "\"~a.\" Web. ~a <~a>."
+         (webpage-title pub) (webpage-retrieved pub) (webpage-url pub))]
+The logic for formatting each class of publication is distributed between the functions for each citation style, so to handle a new kind of publication, we need to make a change in each of those functions. Our program is small, so the problem isn’t too bad in this case, but imagine how the needed changes might be scattered in a larger program. Even worse, we might be extending a library where the original source code for cite-apa and cite-mla is unavailable (or we don’t want to modify it, because we want to continue to track upstream changes). Perhaps there’s a different way to structure our code that would make this kind of extension easier.
+
+2 Turning it inside-out
+In the example above, we defined our data first, and then wrote functions to manipulate it. This means that new classes of data require new cases in the functions. What if, instead, we attached the logic for formatting each class of publication to the data itself. That is, we’re going to represent a publication as a value that knows how to format itself. In particular, we will represent a publication as a function that, when told which style to use, returns its own formatted citation:
+
+;; A Publication is a [CitationStyle -> String]
+;;   where
+;; CitationStyle is one of:
+;; -- "apa"
+;; -- "mla"
+We can now write (something akin to) a template for creating Publications, which we will fill in for each class of publication that we need to represent. The idea is that a function for constructing some kind of publication takes parameters describing that publication, and returns a function representing the publication.
+
+;; create-publication: ... -> [CitationStyle -> String]
+;; Template for constructing publications
+(define (create-publication args ...)
+  (lambda (style)
+    (cond
+      [(string=? style "apa") (... args ...)]
+      [(string=? style "mla") (... args ...)])))
+Note that we really have turned our code inside-out! Instead of a template for processing publications, we have a template for creating publications that know how to process themselves. Instead of each operation analyzing the shape of the publication that it’s given, each publication conditions on the operation that it is asked to perform.
+
+Let’s fill in the template for creating representations of books:
+
+;; new-book: String String String String Number -> Publication
+;; To construct a new book.
+(define (new-book title author publisher location year)
+  (lambda (style)
+    (cond
+      [(string=? style "apa")
+       (format "~a (~a). ~a. ~a: ~a."
+               author year title location publisher)]
+      [(string=? style "mla")
+       (format "~a. ~a. ~a: ~a, ~a."
+               author title location publisher year)])))
+
+;; Example:
+(define rushdie.v2
+        (new-book "Midnight's Children" "Salman Rushdie"
+                  "Jonathan Cape" "London" 1980))
+Now we can see how it works. The function new-book takes the same arguments that make-book took above, but instead of returning a simple structure, it returns a function that, when passed a CitationStyle, returns a citation formatted in that style. Let’s try it out:
+
+(check-expect
+ (rushdie.v2 "apa")
+ "Salman Rushdie (1980). Midnight's Children. London: Jonathan Cape.")
+We can test our new implementation by comparing it again the old one (which increases our confidence that our translation is correct):
+
+(check-expect (rushdie.v2 "apa") (cite-apa rushdie.v1))
+(check-expect (rushdie.v2 "mla") (cite-mla rushdie.v1))
+We can, of course, define a constructor function for articles as well:
+;; new-article: String String String Number Number Number -> Publication
+;; To construct a new article.
+(define (new-article title author journal volume issue year)
+  (lambda (style)
+    (cond
+      [(string=? style "apa")
+       (format "~a (~a). ~a. ~a, ~a(~a)."
+               author year title journal volume issue)]
+      [(string=? style "mla")
+       (format "~a. \"~a.\" ~a ~a.~a (~a)."
+               author title journal volume issue year)])))
+
+;; Examples:
+(define turing.v2
+        (new-article "Computing machinery and intelligence"
+                     "A. M. Turing" "Mind" 59 236 1950))
+
+(check-expect (turing.v2 "apa") (cite-apa.v1 turing))
+(check-expect (turing.v2 "mla") (cite-mla.v1 turing))
+And if we find out later that we need to handle web pages as well, we can create a new constructor function for web pages, without modifying any of our book or article code:
+
+;; new-webpage: String String String -> Publication
+;; To construct a new web page.
+(define (new-webpage title url retrieved)
+  (lambda (style)
+    (cond
+      [(string=? style "apa")
+       (format "~a. Retrieved ~a, from ~a."
+               title retrieved url)]
+      [(string=? style "mla")
+       (format "\"~a.\" Web. ~a <~a>."
+               title retrieved url)])))
+
+;; Examples:
+(define cs3500.v2
+        (new-webpage "CS3500: Object-Oriented Design"
+                     "https://www.ccs.neu.edu/course/cs3500/"
+                     "August 11, 2014"))
+
+(check-expect (cs3500.v2 "apa") (cite-apa cs3500.v1))
+(check-expect (cs3500.v2 "mla") (cite-mla cs3500.v1))
+To use a Publication, whether it represents a book, an article, or a web page, we no longer need to know how the data is represented. Instead, we only need to know the interface to Publications, which in this case is the set of CitationStyles that they know how to handle. This means that even though each class of publication is defined separately, we can work with them uniformly:
+
+(map (lambda (pub) (pub "mla"))
+     (list rushdie turing cs3500))
+3 From structures to objects
+The values of rushdie.v2, turing.v2, and cs3500.v2 are objects—data encapsulated with the code that knows how to operate on it. Clients of objects—that is, other code that uses them—interact with objects by sending them messages. In this case, Publication objects understand two kinds of messages, "apa" and "mla", but we could imagine constructing objects that take more information in their messages, as additional arguments. The code that an object invokes in response to a message—that is, each case in each object’s cond expression—is called a method. And the three classes of objects that we know how to construct are called, naturally, classes. To use an object, we don’t need to know its class. All we need to know is its interface—that is, the set of messages that it understands.
+
+We can program with objects in nearly any programming language, though some languages make it smoother than others. Attempting to extend our objects above with more functionality will get increasing awkward. What if we want to receive messages with different numbers of parameters? Or what if there’s functionality that we’d like to share between different implementations? And because we’re interested in using object-oriented programming to design large systems, it would be really helpful if the language could help us find some kinds of bugs, such as when an implementation or client doesn’t conform to its supposed interface. For this reason, we are often better off doing object-oriented programming in a language designed for it, with built-in notions of classes, objects, messages, methods, and interfaces.
+
+4 Now in Java
+In ISL+𝜆
+, the interface to publication objects is informal, in a comment where the compiler doesn’t see and can’t check it. In Java, on the other hand, we can express the interface as code:
+
+/**
+ * Specifies operations for formatting citations from bibliographic data.
+ */
+public interface Publication {
+  /**
+   * Formats a citation in APA style.
+   *
+   * @return the formatted citation
+   */
+  String citeApa();
+
+  /**
+   * Formats a citation in MLA style.
+   *
+   * @return the formatted citation
+   */
+  String citeMla();
+}
+We define the interface Publication, which declares a method for each of the two citation styles that we want to support. The comments beginning with /** are used by a tool called Javadoc to generate documentation; we’ll see more about this later.
+
+4.1 The Book class
+Now, for each kind of publication whose bibliographic information we want to represent, we define a class that implements the Publication interface. Let’s start with books:
+
+/**
+ * The {@code Book} class represents bibliographic information for books.
+ */
+public class Book implements Publication {
+  private final String title, author, publisher, location;
+  private final int year;
+}
+The implementation of the Book class declares five instance variables for the five components of the bibliographic information for a book according to our data analysis. The fields are declared private because they don’t need to be directly accessible to clients of the class. (As a rule of thumb, all instance variables should be private.) The instance variables don’t need to change once an instance is contructed; by declaring them final, we tell the Java compiler to issue a type error if we attempt to assign to them, which might help us detect bugs.
+
+Next we define a constructor for the Book class, which specifies how to initialize Book objects:
+
+/** Constructs a {@code Book} object.
+ *
+ * @param title     the title of the book
+ * @param author    the author of the book
+ * @param publisher the publisher of the book
+ * @param location  the location of the publisher
+ * @param year      the year of publication
+ */
+public Book(String title, String author, String publisher,
+            String location, int year)
+{
+  this.title = title;
+  this.author = author;
+  this.publisher = publisher;
+  this.location = location;
+  this.year = year;
+}
+This constructor looks like pure boilerplate—meaningless bookkeeping that wasn’t necessary in the ISL version of the class. But as we will see later, we can create more interesting constructors that do useful things such as allocating other resources or protecting representation invariants.
+
+Finally, we implement the two methods declared in Publication:
+
+public String citeApa() {
+  return author + " (" + year + "). " + title + ". "
+           + location + ": " + publisher + ".";
+}
+
+public String citeMla() {
+  return author + ". " + title + ". " + location + ": "
+           + publisher + ", " + year + ".";
+}
+We construct the formatted strings by appending the instance variables along with some additional punctuation. We may omit purpose statements on these method implementations because their purposes are the same as the those written in the Publication interface (and Javadoc knows to copy the documentation from there).
+
+4.1.1 Testing the Book class
+Our work on the class isn’t done until we test it. We’ll use the testing library JUnit, which offers a way to run simple assertions and report when any of them fail. We start by importing the JUnit library and defining a class to hold our test cases. We also define a variable for a book that we’ll use in our tests:
+
+import org.junit.Test;
+import static org.junit.Assert.assertEquals;
+
+public class BookTest {
+  Publication rushdie = new Book("Midnight's Children", "Salman Rushdie",
+                                 "Jonathan Cape", "London", 1980);
+}
+Note that we declare variable rushdie to have type Publication, not Book. Either is a valid type for it, but generally uses interfaces as types is considered better style than using classes, because it reveals fewer details to clients, which makes code more flexible.
+
+We then write two assertions about the behavior of our example Book object, each in its own method. The static method assertEquals is similar to check-expect, in that it takes two arguments, first the expected value and second the expression to evaluate and check; the test succeeds when the values are “equal”.2
+
+@Test
+public void testCiteApa() {
+  assertEquals(
+    "Salman Rushdie (1980). Midnight's Children. London: Jonathan Cape.",
+    rushdie.citeApa());
+}
+
+@Test
+public void testCiteMla() {
+  assertEquals(
+    "Salman Rushdie. Midnight's Children. London: Jonathan Cape, 1980.",
+    rushdie.citeMla());
+}
+Each test case method must be preceeded by the annotation @Test for JUnit to find and run it, must return void and must require no arguments.
+
+4.2 The Article class
+The implementation of Publication for articles is similar enough to Book that we include it here without further discussion.
+
+/**
+ * Represents bibliographic information for journal articles.
+ */
+public class Article implements Publication {
+  private final String title, author, journal;
+  private final int volume, issue, year;
+
+  /**
+   * Constructs an article.
+   *
+   * @param title   the title of the article
+   * @param author  the author of the article
+   * @param journal the journal in which the article appears
+   * @param volume  the volume of the journal
+   * @param issue   the issue of the journal
+   * @param year    the year of the journal
+   */
+  public Article(String title, String author, String journal, int volume,
+                 int issue, int year) {
+    this.title = title;
+    this.author = author;
+    this.journal = journal;
+    this.volume = volume;
+    this.issue = issue;
+    this.year = year;
+  }
+
+  public String citeApa() {
+    return author + " (" + year + "). " + title + ". "
+             + journal + ", " + volume + "(" + issue + ").";
+  }
+
+  public String citeMla() {
+    return author + ". \"" + title + ".\" " + journal + " "
+             + volume + "." + issue + " (" + year + ").";
+  }
+}
+The tests for articles are straightforward as well:
+
+import org.junit.Test;
+import static org.junit.Assert.assertEquals;
+
+public class ArticleTest {
+  Publication turing =
+         new Article("Computing machinery and intelligence",
+                     "A. M. Turing", "Mind", 59, 236, 1950);
+
+  @Test
+  public void testCiteApa() {
+    assertEquals("A. M. Turing (1950). Computing machinery and "
+                   + "intelligence. Mind, 59(236).",
+                 turing.citeApa());
+  }
+
+  @Test
+  public void testCiteMla() {
+    assertEquals("A. M. Turing. \"Computing machinery and "
+                   + "intelligence.\" Mind 59.236 (1950).",
+                 turing.citeMla());
+  }
+}
+Implementing and testing a Website class is left as an exercise for the reader.
+
+5 Looking forward
+We’ve seen how object-oriented style lets us organize our code in a different way than functional style: Objects encapsulate both data and behaviors associated with that data. The above example illustrates this at a small scale.
+
+The rationale for object-oriented design can be better understood by applying it to bigger examples. This allows us to appreciate more its uses and understand why it is so popular. We will learn throughout this course how organizing our programs as cooperating objects can help us engineer software systems and components that are flexible, reusable, and maintainable.
+
+1Note that DrRacket will not allow redefining the book and article structs, so in the actual Racket source file, we use book*, etc.
+
+2Equality, in Java and in general, is a tricky concept. We will study equality and understand better what assertEquals does later in the semester.

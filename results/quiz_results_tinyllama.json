@@ -1,0 +1,702 @@
+{
+  "model_key": "tinyllama",
+  "question_types": {
+    "true_false": {
+      "n": 30,
+      "n_correct": 17,
+      "accuracy": 56.666666666666664,
+      "questions": [
+        {
+          "id": "tf_001",
+          "topic": "Adapter",
+          "correct": false,
+          "score": 0.0
+        },
+        {
+          "id": "tf_002",
+          "topic": "Adapter",
+          "correct": false,
+          "score": 0.0
+        },
+        {
+          "id": "tf_003",
+          "topic": "Adapter",
+          "correct": true,
+          "score": 1.0
+        },
+        {
+          "id": "tf_004",
+          "topic": "MVC",
+          "correct": false,
+          "score": 0.0
+        },
+        {
+          "id": "tf_005",
+          "topic": "MVC",
+          "correct": true,
+          "score": 1.0
+        },
+        {
+          "id": "tf_006",
+          "topic": "MVC",
+          "correct": false,
+          "score": 0.0
+        },
+        {
+          "id": "tf_007",
+          "topic": "Observer",
+          "correct": true,
+          "score": 1.0
+        },
+        {
+          "id": "tf_008",
+          "topic": "Decorator",
+          "correct": false,
+          "score": 0.0
+        },
+        {
+          "id": "tf_009",
+          "topic": "Decorator",
+          "correct": true,
+          "score": 1.0
+        },
+        {
+          "id": "tf_010",
+          "topic": "Strategy",
+          "correct": true,
+          "score": 1.0
+        },
+        {
+          "id": "tf_011",
+          "topic": "Strategy",
+          "correct": false,
+          "score": 0.0
+        },
+        {
+          "id": "tf_012",
+          "topic": "Command",
+          "correct": true,
+          "score": 1.0
+        },
+        {
+          "id": "tf_013",
+          "topic": "Command",
+          "correct": false,
+          "score": 0.0
+        },
+        {
+          "id": "tf_014",
+          "topic": "Inheritance",
+          "correct": true,
+          "score": 1.0
+        },
+        {
+          "id": "tf_015",
+          "topic": "Inheritance",
+          "correct": true,
+          "score": 1.0
+        },
+        {
+          "id": "tf_016",
+          "topic": "Composition",
+          "correct": true,
+          "score": 1.0
+        },
+        {
+          "id": "tf_017",
+          "topic": "Testing",
+          "correct": false,
+          "score": 0.0
+        },
+        {
+          "id": "tf_018",
+          "topic": "Testing",
+          "correct": false,
+          "score": 0.0
+        },
+        {
+          "id": "tf_019",
+          "topic": "Testing",
+          "correct": true,
+          "score": 1.0
+        },
+        {
+          "id": "tf_020",
+          "topic": "MVC",
+          "correct": false,
+          "score": 0.0
+        },
+        {
+          "id": "tf_021",
+          "topic": "Factory",
+          "correct": false,
+          "score": 0.0
+        },
+        {
+          "id": "tf_022",
+          "topic": "Adapter",
+          "correct": true,
+          "score": 1.0
+        },
+        {
+          "id": "tf_023",
+          "topic": "Decorator",
+          "correct": true,
+          "score": 1.0
+        },
+        {
+          "id": "tf_024",
+          "topic": "GUI",
+          "correct": true,
+          "score": 1.0
+        },
+        {
+          "id": "tf_025",
+          "topic": "GUI",
+          "correct": false,
+          "score": 0.0
+        },
+        {
+          "id": "tf_026",
+          "topic": "MVC",
+          "correct": true,
+          "score": 1.0
+        },
+        {
+          "id": "tf_027",
+          "topic": "Inheritance",
+          "correct": true,
+          "score": 1.0
+        },
+        {
+          "id": "tf_028",
+          "topic": "Strategy",
+          "correct": false,
+          "score": 0.0
+        },
+        {
+          "id": "tf_029",
+          "topic": "Testing",
+          "correct": true,
+          "score": 1.0
+        },
+        {
+          "id": "tf_030",
+          "topic": "Composition",
+          "correct": true,
+          "score": 1.0
+        }
+      ]
+    },
+    "short_answer": {
+      "n": 30,
+      "n_correct": 0,
+      "accuracy": 0.0,
+      "questions": [
+        {
+          "id": "sa_001",
+          "topic": "Adapter",
+          "correct": false,
+          "score": 0.0
+        },
+        {
+          "id": "sa_002",
+          "topic": "Adapter",
+          "correct": false,
+          "score": 0.0
+        },
+        {
+          "id": "sa_003",
+          "topic": "Adapter",
+          "correct": false,
+          "score": 0.0
+        },
+        {
+          "id": "sa_004",
+          "topic": "MVC",
+          "correct": false,
+          "score": 0.0
+        },
+        {
+          "id": "sa_005",
+          "topic": "MVC",
+          "correct": false,
+          "score": 0.0
+        },
+        {
+          "id": "sa_006",
+          "topic": "MVC",
+          "correct": false,
+          "score": 0.25
+        },
+        {
+          "id": "sa_007",
+          "topic": "Observer",
+          "correct": false,
+          "score": 0.0
+        },
+        {
+          "id": "sa_008",
+          "topic": "Decorator",
+          "correct": false,
+          "score": 0.0
+        },
+        {
+          "id": "sa_009",
+          "topic": "Decorator",
+          "correct": false,
+          "score": 0.0
+        },
+        {
+          "id": "sa_010",
+          "topic": "Strategy",
+          "correct": false,
+          "score": 0.0
+        },
+        {
+          "id": "sa_011",
+          "topic": "Strategy",
+          "correct": false,
+          "score": 0.0
+        },
+        {
+          "id": "sa_012",
+          "topic": "Command",
+          "correct": false,
+          "score": 0.0
+        },
+        {
+          "id": "sa_013",
+          "topic": "Command",
+          "correct": false,
+          "score": 0.0
+        },
+        {
+          "id": "sa_014",
+          "topic": "Inheritance",
+          "correct": false,
+          "score": 0.0
+        },
+        {
+          "id": "sa_015",
+          "topic": "Inheritance",
+          "correct": false,
+          "score": 0.0
+        },
+        {
+          "id": "sa_016",
+          "topic": "Composition",
+          "correct": false,
+          "score": 0.0
+        },
+        {
+          "id": "sa_017",
+          "topic": "Testing",
+          "correct": false,
+          "score": 0.0
+        },
+        {
+          "id": "sa_018",
+          "topic": "Testing",
+          "correct": false,
+          "score": 0.0
+        },
+        {
+          "id": "sa_019",
+          "topic": "Testing",
+          "correct": false,
+          "score": 0.0
+        },
+        {
+          "id": "sa_020",
+          "topic": "Testing",
+          "correct": false,
+          "score": 0.0
+        },
+        {
+          "id": "sa_021",
+          "topic": "Factory",
+          "correct": false,
+          "score": 0.0
+        },
+        {
+          "id": "sa_022",
+          "topic": "GUI",
+          "correct": false,
+          "score": 0.0
+        },
+        {
+          "id": "sa_023",
+          "topic": "GUI",
+          "correct": false,
+          "score": 0.0
+        },
+        {
+          "id": "sa_024",
+          "topic": "MVC",
+          "correct": false,
+          "score": 0.0
+        },
+        {
+          "id": "sa_025",
+          "topic": "Adapter",
+          "correct": false,
+          "score": 0.0
+        },
+        {
+          "id": "sa_026",
+          "topic": "Inheritance",
+          "correct": false,
+          "score": 0.0
+        },
+        {
+          "id": "sa_027",
+          "topic": "Decorator",
+          "correct": false,
+          "score": 0.0
+        },
+        {
+          "id": "sa_028",
+          "topic": "MVC",
+          "correct": false,
+          "score": 0.0
+        },
+        {
+          "id": "sa_029",
+          "topic": "Strategy",
+          "correct": false,
+          "score": 0.0
+        },
+        {
+          "id": "sa_030",
+          "topic": "Command",
+          "correct": false,
+          "score": 0.0
+        }
+      ]
+    },
+    "fim_easy": {
+      "n": 20,
+      "n_correct": 0,
+      "accuracy": 0.0,
+      "questions": [
+        {
+          "id": "fim_easy_001",
+          "topic": "Adapter",
+          "correct": false,
+          "score": 0.05707196029776673
+        },
+        {
+          "id": "fim_easy_002",
+          "topic": "Adapter",
+          "correct": false,
+          "score": 0.07769784172661875
+        },
+        {
+          "id": "fim_easy_003",
+          "topic": "Adapter",
+          "correct": false,
+          "score": 0.03666997026759167
+        },
+        {
+          "id": "fim_easy_004",
+          "topic": "Adapter",
+          "correct": false,
+          "score": 0.07235421166306699
+        },
+        {
+          "id": "fim_easy_005",
+          "topic": "MVC",
+          "correct": false,
+          "score": 0.12365591397849462
+        },
+        {
+          "id": "fim_easy_006",
+          "topic": "MVC",
+          "correct": false,
+          "score": 0.12222222222222223
+        },
+        {
+          "id": "fim_easy_007",
+          "topic": "Testing",
+          "correct": false,
+          "score": 0.023883696780893082
+        },
+        {
+          "id": "fim_easy_008",
+          "topic": "Testing",
+          "correct": false,
+          "score": 0.07676348547717837
+        },
+        {
+          "id": "fim_easy_009",
+          "topic": "Strategy",
+          "correct": false,
+          "score": 0.06151990349819059
+        },
+        {
+          "id": "fim_easy_010",
+          "topic": "Inheritance",
+          "correct": false,
+          "score": 0.1136950904392765
+        },
+        {
+          "id": "fim_easy_011",
+          "topic": "Decorator",
+          "correct": false,
+          "score": 0.03340292275574108
+        },
+        {
+          "id": "fim_easy_012",
+          "topic": "Command",
+          "correct": false,
+          "score": 0.1386392811296534
+        },
+        {
+          "id": "fim_easy_013",
+          "topic": "MVC",
+          "correct": false,
+          "score": 0.06299212598425197
+        },
+        {
+          "id": "fim_easy_014",
+          "topic": "Testing",
+          "correct": false,
+          "score": 0.03396226415094339
+        },
+        {
+          "id": "fim_easy_015",
+          "topic": "Adapter",
+          "correct": false,
+          "score": 0.050647820965842194
+        },
+        {
+          "id": "fim_easy_016",
+          "topic": "MVC",
+          "correct": false,
+          "score": 0.018164435946462665
+        },
+        {
+          "id": "fim_easy_017",
+          "topic": "Testing",
+          "correct": false,
+          "score": 0.07930607187112759
+        },
+        {
+          "id": "fim_easy_018",
+          "topic": "Command",
+          "correct": false,
+          "score": 0.024193548387096753
+        },
+        {
+          "id": "fim_easy_019",
+          "topic": "MVC",
+          "correct": false,
+          "score": 0.06040992448759441
+        },
+        {
+          "id": "fim_easy_020",
+          "topic": "Adapter",
+          "correct": false,
+          "score": 0.05821917808219179
+        }
+      ]
+    },
+    "fim_hard": {
+      "n": 10,
+      "n_correct": 0,
+      "accuracy": 0.0,
+      "questions": [
+        {
+          "id": "fim_hard_001",
+          "topic": "Adapter",
+          "correct": false,
+          "score": 0.17729729729729726
+        },
+        {
+          "id": "fim_hard_002",
+          "topic": "Adapter",
+          "correct": false,
+          "score": 0.20845070422535217
+        },
+        {
+          "id": "fim_hard_003",
+          "topic": "MVC",
+          "correct": false,
+          "score": 0.13882063882063878
+        },
+        {
+          "id": "fim_hard_004",
+          "topic": "Decorator",
+          "correct": false,
+          "score": 0.20169651272384548
+        },
+        {
+          "id": "fim_hard_005",
+          "topic": "Command",
+          "correct": false,
+          "score": 0.2250274423710209
+        },
+        {
+          "id": "fim_hard_006",
+          "topic": "Strategy",
+          "correct": false,
+          "score": 0.21377183967112023
+        },
+        {
+          "id": "fim_hard_007",
+          "topic": "MVC",
+          "correct": false,
+          "score": 0.23287671232876717
+        },
+        {
+          "id": "fim_hard_008",
+          "topic": "GUI",
+          "correct": false,
+          "score": 0.16597077244258873
+        },
+        {
+          "id": "fim_hard_009",
+          "topic": "Observer",
+          "correct": false,
+          "score": 0.2684824902723736
+        },
+        {
+          "id": "fim_hard_010",
+          "topic": "Command",
+          "correct": false,
+          "score": 0.2587991718426501
+        }
+      ]
+    },
+    "essay": {
+      "n": 10,
+      "n_correct": 0,
+      "accuracy": 0.0,
+      "questions": [
+        {
+          "id": "essay_001",
+          "topic": "Inheritance",
+          "correct": false,
+          "score": 0.0
+        },
+        {
+          "id": "essay_002",
+          "topic": "Adapter",
+          "correct": false,
+          "score": 0.0
+        },
+        {
+          "id": "essay_003",
+          "topic": "MVC",
+          "correct": false,
+          "score": 0.0
+        },
+        {
+          "id": "essay_004",
+          "topic": "Decorator",
+          "correct": false,
+          "score": 0.0
+        },
+        {
+          "id": "essay_005",
+          "topic": "Strategy",
+          "correct": false,
+          "score": 0.0
+        },
+        {
+          "id": "essay_006",
+          "topic": "Command",
+          "correct": false,
+          "score": 0.0
+        },
+        {
+          "id": "essay_007",
+          "topic": "Testing",
+          "correct": false,
+          "score": 0.0
+        },
+        {
+          "id": "essay_008",
+          "topic": "Observer",
+          "correct": false,
+          "score": 0.0
+        },
+        {
+          "id": "essay_009",
+          "topic": "Inheritance",
+          "correct": false,
+          "score": 0.0
+        },
+        {
+          "id": "essay_010",
+          "topic": "Integration",
+          "correct": false,
+          "score": 0.0
+        }
+      ]
+    }
+  },
+  "topics": {
+    "Adapter": {
+      "n": 17,
+      "n_correct": 2,
+      "accuracy": 11.764705882352942
+    },
+    "MVC": {
+      "n": 18,
+      "n_correct": 2,
+      "accuracy": 11.11111111111111
+    },
+    "Observer": {
+      "n": 4,
+      "n_correct": 1,
+      "accuracy": 25.0
+    },
+    "Decorator": {
+      "n": 9,
+      "n_correct": 2,
+      "accuracy": 22.22222222222222
+    },
+    "Strategy": {
+      "n": 9,
+      "n_correct": 1,
+      "accuracy": 11.11111111111111
+    },
+    "Command": {
+      "n": 10,
+      "n_correct": 1,
+      "accuracy": 10.0
+    },
+    "Inheritance": {
+      "n": 9,
+      "n_correct": 3,
+      "accuracy": 33.333333333333336
+    },
+    "Composition": {
+      "n": 3,
+      "n_correct": 2,
+      "accuracy": 66.66666666666667
+    },
+    "Testing": {
+      "n": 13,
+      "n_correct": 2,
+      "accuracy": 15.384615384615385
+    },
+    "Factory": {
+      "n": 2,
+      "n_correct": 0,
+      "accuracy": 0.0
+    },
+    "GUI": {
+      "n": 5,
+      "n_correct": 1,
+      "accuracy": 20.0
+    },
+    "Integration": {
+      "n": 1,
+      "n_correct": 0,
+      "accuracy": 0.0
+    }
+  }
+}

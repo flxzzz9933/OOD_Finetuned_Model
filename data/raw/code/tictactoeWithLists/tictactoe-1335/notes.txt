@@ -1,0 +1,17 @@
+Announcements
+
+1. HW2 notes
+    - I suggest you have already gotten a preliminary design and started
+      writing implementations/tests by now.
+    - Only submit what the assignment asks you to (src/test folders).
+      Every extra item is something the graders must click through to grade
+      AND it costs you points.
+    - Want more behaviors for cards for your use? Make a new interface
+      and have it extend the Card interface. Anything else is bad design.
+    - Never make a public helper method. Period.
+    - Did you notice that your source code's method implementations must be
+      50 lines or fewer?
+
+
+Topics
+- Controllers

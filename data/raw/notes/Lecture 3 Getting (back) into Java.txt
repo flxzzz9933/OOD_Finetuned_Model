@@ -1,0 +1,258 @@
+Lecture 3: Getting (back) into Java
+SlidesJava and ISL source (.zip)
+Objectives of the lecture
+This and the next lecture designs a simple example from scratch, starting from a description of the problem. It creates an interface and discusses specific ways to represent data. Next it completes one specific implementation, and then adds another implementation after the first one has been tested and used. Finally it shows how abstraction can be used to minimize code replication, and how designing by interface has several advantages.
+
+1 Analysis
+We will design a small library for computing with durations. 1. Before we start writing code, we must carefully consider the information we want to work with and what operations it needs to support.
+
+What do we mean by a duration? Here are some examples:
+
+43.27𝜇𝑠
+109
+ years
+525,600 minutes
+3 days, 6 hours, 17 minutes, and 25 seconds
+1.1 Operations
+In an object-oriented system data and operations on it are kept together. Therefore the representation of information is often related to the operations that we wish to perform on it.
+
+Here are some possible operations on durations:
+
+Convert units: 10 minutes = 600 seconds (Does this make sense?)
+Format: 257 seconds might be printed as 4:17 or 0:04:17
+Add: 2:45 plus 3:30 is 6:15
+Subtract: 5 hours minus 2 hours is 3 hours
+Decompose into human-friendly components: 7868 seconds might be more easily read as 2 hours, 11 minutes, and 8 seconds
+Compare durations for equality and ordering
+For our design in this lecture, we will support conversion to seconds, one simple form of formatting, addition, and comparisons. The human-friendly units that we will decompose durations into include hours, minutes, and seconds.
+
+1.2 Assumptions
+Before proceeding, it is necessary to make some assumptions about what kinds of durations we will work with, because we probably cannot represent any conceivable duration—rather, there will be some limits. Which of the above examples do we need to be able to work with? In particular:
+
+What resolution of time do we want to support? (That is, what is the smallest difference between two times that we can distinguish?)
+Are there bounds, lower or upper?
+Do we want to distinguish the same amounts of time when expressed in different units?
+To keep things simple, we answer these questions as follows2. The smallest unit of time will be the second; we won’t deal with durations that are not an integer number of seconds. We disallow negative durations, since it isn’t clear what those mean. Rather than specify a maximum duration, we leave it unspecified, allowing that there will be some upper bound determined by our choice of representation. And we’d like durations to stand for pure lengths of time, regardless of what unit they are expressed in, so for example 3 minutes should be equal to 180 seconds.
+
+1.3 Interface design
+Now that we have a list of operations and have settled on some assumptions, we can design our interface Duration. It includes the following methods:
+
+/**
+ * Durations, with a resolution of seconds. All durations are non-negative.
+ */
+public interface Duration extends Comparable<Duration> {
+  /**
+   * Gets the total duration in seconds.
+   *
+   * @return the number of seconds (non-negative)
+   */
+  long inSeconds();
+
+  /**
+   * Formats this duration in the form {@code H:MM:SS} where the minutes and
+   * seconds are both zero-padded to two digits, but the hours are not.
+   *
+   * @return this duration formatted in hours, minutes, and seconds
+   */
+  String asHms();
+
+  /**
+   * Returns the sum of two durations.
+   *
+   * @param other the duration to add to {@code this}
+   * @return the sum of the durations
+   */
+  Duration plus(Duration other);
+}
+Things to notice:
+
+We extend interface Comparable in order to define its comparison method compareTo on durations. In particular, extending interface Comparable<Duration> means that all Durations need to be comparable to Durations.
+The interface and the methods each have a Javadoc comment, which is a block comment that starts with /**.3 Javadoc uses the first sentence of each Javadoc comment in the table of contents, so it should be clear and to-the-point. Think of it as a purpose statement. This interface uses three different Javadoc markup tags:
+@param paramName description is used to document method parameters, in this case other in method plus.
+@return description is used to document the value returned by each non-void method. (For simple methods, it often seems redundant.)
+{@code some-code} is used to format some-code as code.
+Notice that the plus method takes a Duration object as an argument. Thus the signature of this method does not depend on any specific implementation of the Duration interface. This is an example of how “Dependency Inversion” is avoided (the D in SOLID).
+2 Implementation
+2.1 Representation
+In order to implement the Duration interface, we need to decide on a representation. Given that durations will have to be formatted as hours, minutes, and seconds, and that we will likely construct a duration from hours, minutes, and seconds, it seems intuitive to represent a duration using them directly4:
+
+public final class DurationImpl implements Duration {
+  private final int hours;
+  private final int minutes;
+  private final int seconds;
+}
+Three qualifiers in this code snippet are worth explaining:
+final on the class means that DurationImpl cannot be extended. Inheritance can create complexities and often unwanted errors, so it is a good idea to prevent inheritance unless we anticipate that it may be useful later.
+The fields are private so that client code of our class cannot access them directly and can only use the official interface. This is for encapsulation, and we should make fields private by default. Note that in general we shouldn’t define getters and setters unless we have a specific need for them, and in this example we don’t.
+final on each field means that the field must be assigned exactly once, in the constructor, and once initialized cannot be changed. Because immutability promotes modularity,5 we should mark fields final when it makes sense in context; in particular, when a class represents a genuine value rather than something that represents a state that is transient, immutability makes sense.
+2.2 Initialization
+We might expect a constructor that takes the decomposition as parameters to be simple, like so:
+
+/**
+ * Constructs a duration in terms of its length in hours, minutes, and
+ * seconds.
+ *
+ * @param hours the number of hours
+ * @param minutes the number of minutes
+ * @param seconds the number of seconds
+ * @throws IllegalArgumentException if any argument is negative
+ */
+public DurationImpl(int hours, int minutes, int seconds) {
+  if (hours < 0 || minutes < 0 || seconds < 0) {
+    throw new IllegalArgumentException("must be non-negative");
+  }
+
+  // Insert omitted code from below //
+
+  this.hours = hours;
+  this.minutes = minutes;
+  this.seconds = seconds;
+}
+This constructor checks that each parameter is non-negative (as it makes sense in this context), to ensure that durations are not negative (this is called an invariant). However, this is not enough. Consider the following durations:
+Duration d1 = new DurationImpl(0, 0, 90);
+Duration d2 = new DurationImpl(0, 1, 30);
+According to our criteria above, it should be the case that d1.equals(d2) (once we’ve overridden equals), since they represent the same amount of time. This means that we somehow need to get them in the same form if we want to compare them. How can we make that happen? We have a choice:
+
+We could have equals look at both the minutes and seconds fields and do the right arithmetic.
+We could have the constructor store the duration in a canonical form.
+If we choose the former, then other methods may duplicate the work. For example, according to asHms’s contract, it formats both durations in the same canonical form, "0:01:30". That suggests that we can save work—and have a single point of control—if we canonicalize in the constructor. (Furthermore, a real class is likely to have additional methods that require the canonicalized components.) Thus, we add code to the constructor to canonicalize the representation:
+
+if (seconds > 59) {
+  minutes += seconds / 60;
+  seconds %= 60;
+}
+
+if (minutes > 59) {
+  hours += minutes / 60;
+  minutes %= 60;
+}
+This ensures that the seconds and minutes never exceed 59 (because if they did, we would add to the minutes or hours, respectively, instead).
+2.3 Domain-specific methods
+The observation methods are simple:
+
+@Override
+public long inSeconds() {
+  return 3600 * hours + 60 * minutes + seconds;
+}
+
+@Override
+public String asHms() {
+  return String.format("%d:%02d:%02d", hours, minutes, seconds);
+}
+In a Java format string, the code %d means that the next parameter is an int. Writing 2 between % and d means to pad the number to be at least two characters long; by default padding is done with spaces, but 02 means to zero-pad the integer to make it two characters long.
+The operation plus is slightly more difficult. The easiest way to add two durations is to convert them both to raw seconds, add, and then convert back to hours, minutes, and seconds. The first step we can do with inSeconds(), but to convert back from seconds, we need to do a little more work. Anticipating that its use could be more general, we define a second constructor:
+
+/**
+ * Constructs a duration in terms of its length in seconds.
+ *
+ * @param inSeconds the number of seconds (non-negative)
+ * @throws IllegalArgumentException {@code inSeconds} is negative
+ */
+public DurationImpl(long inSeconds) {
+  if (inSeconds < 0) {
+    throw new IllegalArgumentException("must be non-negative");
+  }
+
+  this.seconds = (int) (inSeconds % 60);
+  this.minutes = (int) (inSeconds / 60 % 60);
+  this.hours = (int) (inSeconds / 3600);  // overflow...
+}
+In each assignment above, (int) is a numeric cast that converts from type long, in this case, to type int. Because the range of long is larger, not all longs can be represented correctly as ints, and instead will overflow, producing the wrong answer. The first two casts are guaranteed not to overflow, since x % 60 is between 0 and 59, plenty small to fit in an int, for any x. However, if inSeconds is large enough6 then the resulting object won’t be right.
+
+With the new constructor, plus is easy:
+
+@Override
+public Duration plus(Duration that) {
+  return new DurationImpl(this.inSeconds() + that.inSeconds());
+}
+2.4 Standard methods
+Because Duration extends Comparable<Duration>, we need to implement the compareTo(Duration) method. We could do this by comparing the components, but it’s simpler to compare the total seconds:
+
+@Override
+public int compareTo(Duration that) {
+  return Long.compare(this.inSeconds(), that.inSeconds());
+}
+Note that the Long class has a static method for comparing primitive, lowercase-ell long values, because primitive values cannot themselves have methods.
+All classes should override Object.toString() with something reasonable. In this case, asHms is a fine implementation of toString:
+
+@Override
+public String toString() {
+  return asHms();
+}
+Finally, we need to decide whether to override Object.equals(Object) and Object.hashCode(). (Never override one without the other—we’ll talk about this soon.) The default implementations inherited from Object use reference equality and a hash function compatible with reference equality. This most often makes sense for distinguishing stateful objects, since two objects that currently have the same state can change in the future. However, for immutable value objects like DurationImpl, if we construct two objects representing the same length of time, those values are essentially equal. Thus, it makes sense to override equals to define extensional equality, and hashCode to compute hash codes using the same values that are compared by equals. Here’s a first attempt:
+
+@Override
+public boolean equals(Object o) {
+  // Fast path for reference equality:
+  if (this == o) {
+    return true;
+  }
+
+  // If o isn't the right class then it can't be equal:
+  if (! (o instanceof DurationImpl)) {
+    return false;
+  }
+
+  // The successful instanceof check means our cast will succeed:
+  DurationImpl that = (DurationImpl) o;
+
+  return this.hours == that.hours
+      && this.minutes == that.minutes
+      && this.seconds == that.seconds;
+}
+
+@Override
+public int hashCode() {
+  return Objects.hash(hours, minutes, seconds);
+}
+The static method Objects.hash(Object...) takes any number of arguments, each of which it hashes using that argument’s hashCode() method, and then combining the results in a reasonable way.
+However, if we choose to, we can do better. Because Duration is an interface, we should expect that it will be implemented more times in the future. Perhaps it would be useful if the current and all future implementations of Duration could work together seamlessly, including being considered equal if they represent the same length of time. To do this, we need to rewrite the equals method to compare not only to another DurationImpl but to any Duration via its interface. We can do this in this case because inSeconds() is part of the interface and returns sufficient information to test for equality. So we create a more general equals that compares seconds:
+
+@Override
+public boolean equals(Object that) {
+  if (this == that) {
+    return true;
+  }
+
+  if (! (that instanceof Duration)) {
+    return false;
+  }
+
+  return ((Duration) that).inSeconds() == this.inSeconds();
+}
+We’re nearly done, but not yet. Above we wrote that equals and hashCode should always be overridden together (or not at all), and similarly, changing one of them often requires changing the other. A proper hashCode method will return the same hash code for any two Durations that are equal according to the equals method. That means that hashCode should only use as inputs values that are part of the equals comparison, which in this case means we should hash the total seconds:
+
+@Override
+public int hashCode() {
+  return Long.hashCode(inSeconds());
+}
+2.5 Full circle
+Finally, building the extra flexibility into DurationImpl doesn’t do us any good if future implementations of Duration don’t follow the same rules. So we document how equals and hashCode must work for all implementations of the Duration interface in the interface itself:
+
+/**
+ * Durations, with a resolution of seconds. All durations are non-negative.
+ *
+ * <p>Different {@code Duration} implementations should work together,
+ * meaning that:
+ *
+ * <ul>
+ *   <li>Two durations must be equal if they have the same number of seconds.</li>
+ *   <li>The hash code of a duration is the result of calling
+ *        {@link Long#hashCode(long)} on its length in seconds.</li>
+ * </ul>
+ * </p>
+ */
+public interface Duration extends Comparable<Duration> {
+  ...
+}
+1This is a potentially tricky subject, and we will simplify a lot.
+
+2Although we make some arbitrary assumptions here to simplify the illustration, in reality assumptions about resolution and range of data should be made according to requirements, stated and extrapolated.
+
+3In IntelliJ, if you press enter after the second *, it generates a Javadoc comment template for you.
+
+4Intuitive is subjective: what if we find out later that our chosen representation wasn’t the best option after all?
+
+5Why is immutability desirable? Methods that take or return immutable types, written here and elsewhere are implicitly guaranteed not to change these types, deliberately or by accident. This makes them easier to document and use as well.
+
+6In particular, if inSeconds / 3600 > (long) Integer.MAX_VALUE.

@@ -1,0 +1,97 @@
+package view;
+
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
+
+import javax.swing.*;
+
+import model.IModel;
+
+public class EchoPanel extends JPanel {
+
+  private final JTextField textInput;
+  private final JLabel echoLabel;
+  private JButton echoButton;
+
+  //private final IModel model; //Used to be needed, but no longer as there is no listener here.
+
+  public EchoPanel(IModel model) {
+    super();
+
+    //this.model = model;
+
+    //By default, panels have a FlowLayout
+
+    echoLabel = new JLabel("Echo text here!");
+    this.add(echoLabel);
+
+    textInput = new JTextField(20);
+    this.add(textInput);
+
+    echoButton = new JButton("Echo!");
+    echoButton.setActionCommand("echo");
+    //echoButton.addActionListener(this); //This isn't a listener. So who do we pass in? And where?
+    this.add(echoButton);
+
+  }
+
+  public String getInput() {
+    return textInput.getText();
+  }
+
+  public void displayText(String text) {
+    echoLabel.setText(text);
+  }
+
+  public void clearInput() {
+    textInput.setText("");
+  }
+
+  public void setViewActions(ViewActions actions) {
+    echoButton.addActionListener(new EchoActionListener(actions));
+    textInput.addKeyListener(new KeyListener() {
+      @Override
+      public void keyTyped(KeyEvent e) {
+        if(e.getKeyChar() == 'x') {
+          actions.exitProgram();
+        }
+      }
+
+      @Override
+      public void keyPressed(KeyEvent e) {
+
+      }
+
+      @Override
+      public void keyReleased(KeyEvent e) {
+
+      }
+    });
+    /*
+    echoButton.addActionListener(new ActionListener() {
+      @Override
+      public void actionPerformed(ActionEvent e) {
+        actions.displayText(textInput.getText());
+      }
+    });
+     */
+  }
+
+  class EchoActionListener implements ActionListener {
+
+    private ViewActions actions;
+
+    public EchoActionListener(ViewActions actions) {
+      this.actions = actions;
+    }
+
+    @Override
+    public void actionPerformed(ActionEvent e) {
+      actions.displayText(textInput.getText());
+    }
+  }
+
+
+}

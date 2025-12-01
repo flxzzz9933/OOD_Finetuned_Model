@@ -1,0 +1,200 @@
+Announcements
+
+1. HW6 out
+    - You have multiple view and observer examples on Canvas
+      modules, lab, and on course website.
+
+Topics
+- Strategies
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Strategies are function objects that state how a feature
+is preformed at runtime.
+
+e.g
+
+interface Strategy {
+    //your singular function you want to decide how to do at runtime
+}
+
+
+
+
+
+
+
+
+
+
+
+
+Decorators are classes that
+    - have the same type as what they decorate
+    - have as a field the object they decorate
+    - apply some change in behavior to some existing object
+
+e.g.
+
+class Decorator implements IBase {
+    IBase base;
+
+    public Decorator(IBase base) {
+        ....
+    }
+} // preferred because not dependent on implementation
+
+OR
+
+class Decorator extends Base {
+    Base base; //or a more general type if applicable
+
+    public Decorator(Base base) {
+        ...
+    }
+} // might be necessary, but dependent on the implementation
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+interface Beverage {
+    Size size();
+    double price();
+}
+
+enum Size { SMALL, MED, LARGE };
+
+class Coffee implements Beverage {
+
+    private Size size;
+    private String type;
+
+    public Coffee(Size size, String type) {
+        this.size = size;
+        this.type = type;
+    }
+
+    public Size size() {
+        return size;
+    }
+
+    public double price() {
+        switch(size) {
+            case SMALL: return 5.00;
+            case MED: return 5.75;
+            case LARGE: return 6.25;
+        }
+    }
+}
+
+Possible add-ons for your drink:
+    - Milk (Whole, Almond, Oat, 2%, etc)
+    - Honey
+    - Simple Syrup (and relevant flavors like Hazelnut, Mocha, Vanilla, etc.)
+    - Sweetener (but could just be different types of sweetnes levels)
+    - Iced (Less, Extra, etc) or Hot
+    - Coal Foam
+
+class BevWithMilk implements Beverage {
+    private Beverage beverage;
+    privagte MilkType type;
+
+    public BevWithMilk(Beverage base, MilkType type) {
+        this.beverage = base;
+        this.type = type;
+    }
+
+    public Size size() {
+        return this.beverage.size();
+    }
+
+    public double price() {
+        switch(type) {
+            case WHOLE: return this.beverage.price() + 0.50;
+            case OAT: return this.beverage.price() + 1.00;
+            ...
+        }
+    }
+}
+
+interface Sweet {
+    SweetLevel howSweet();
+}
+
+class BevWithSweet implements Beverage, Sweet {
+    private Beverage base;
+    private SweetType type;
+
+    //ignore constructor
+
+    public Size size() {
+        return base.size():
+    }
+
+    public double price() {
+        //Price calculated using base AND the SweetType
+    }
+
+    public SweetLevel howSweet() {
+        //Maybe only dependent on SweetType
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

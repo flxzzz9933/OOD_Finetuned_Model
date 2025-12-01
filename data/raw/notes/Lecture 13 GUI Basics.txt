@@ -1,0 +1,346 @@
+Lecture 13: GUI Basics
+MVC codestarter codesolution code
+1 Introduction to Views
+So far we’ve worked on designing models to represent the data relevant to a problem domain, in a form that encapsulates the data behind an interface that clients can use without having to know any implementation details. The model is responsible for ensuring that it can’t get stuck in a bogus or invalid state, and exposes whatever appropriate observations and operations are needed while still preserving this integrity constraint.
+
+We’ve also worked on simple synchronous controllers that allow users to interact with a model, in a form that encapsulates the user interactions and can provide feedback to users without having to redundantly ensure any integrity constraints. Moreover, controllers can be customized or enhanced without needing to change the model, making the model more convenient to use without making it any more complex.
+
+Now, it’s time to introduce the third part of the MVC trio: views. Views are renderings of the data in the model, and can be as simple as printing debug output to a console, as complex as fancy graphical user interfaces, or anything in between. Dealing with GUIs also brings additional challenges, and we will discuss some of them.
+
+1.1 Outline
+This lecture starts by adding a text-based, interactive view to the program. This is closest to our earlier design for the controller, but it carves out a view cleanly. This example also illustrates the typical interactions between the model, view and controller in a simple manner.
+
+We then progressively transition to graphical user interfaces. We start with poorly-designed but working code, and improve it in three stages. Initially, the code for the view will directly manipulate the model. Our first incremental improvement will decouple the view from the model so that it need not — and in fact cannot — do so. Our second improvement will add a new feature to the view, and add the ability to control that in the controller. Finally, our third improvement will generalize the controller to make its UI triggers more customizable.
+
+The code for this lecture is available at the top of this page, as the MVC code link. The second link provides code for a program with an incomplete GUI. It is recommended that you complete this exercise to practice with GUIs. Finally the third link provides a solution for this GUI.
+
+2 Design
+All examples in this lecture follow a common design. The model state (interface IModel and implementation Model) consists of a single String and offers methods to get and update it. All views (coupled with controllers wherever applicable) expose functionality to interactively show this string, and to update it.
+
+3 Text-based UI
+In the TextUI directory we show a text-based user interface. The IView interface encapsulates all the methods that a view’s client would need to call: note how they correspond roughly to the “things” that a controller would need to tell the view to do. The TextView class implements this interface. It transmits all messages to a PrintStream object provided to it through its constructor. Similar to the design in Lecture 8 this allows us to test the view using any suitable PrintStream object.
+
+The IController interface represents a controller: it has only method which is called to give control of the application to the controller. The TextController class implements the controller. It works with IModel, IView and Scanner objects to handle model, view and data input functionality respectively. At its heart, the controller goes through a loop that provides users with some options, takes further inputs depending on the chosen options and delegates to the model and view accordingly. Since the sequence of operations is largely fixed, this qualifies as a synchronous controller.
+
+4 Stage 1: Introduction to GUIs
+In the BadDesignButFunctional directory, we have a poorly written implementation of a simple program that uses the same model, but a graphical user interface.
+
+Our main() method constructs a Model, and constructs a view that is given a reference to the model. The view interface (IView) has only three methods: to obtain the text the user has typed in to the text box, to clear that text box, and to echo a string to the label in the UI. The implementation of the view, JFrameView, is markedly more complicated in appearance than expected, but it breaks down into several simpler parts.
+
+4.1 Frames and controls
+Our program uses the Swing framework to show its UI. In Swing, an individual window is known as a frame, which can contain controls known as components. To create our own window, we design a class that subclasses from JFrame, do some work to establish the components in it, and then call setVisible to display the window. Within the constructor of our frame, we create four components: a label to show some text, a text box to edit text, and two buttons. Adding several controls to a frame requires that we give them a layout, which describes the spatial relationships between the controls. In this example, we’re using a FlowLayout, which allows the controls to wrap around as we resize the window. (Try running the project and resizing the window to be narrower than the controls are.) Different layout managers allow adding controls in different ways. Once controls are added to the UI, the pack() method is used tell the layout manager to determine the actual positions and sizes of all the controls.
+
+In order for the controls to do anything, however, we need to add an event handler to them. An event handler, or callback, is simply a function that gets called when something interesting occurs. In our case, the clicking of different buttons should trigger a callback. In the jargon of Swing, clicking on buttons triggers their action, and so we must supply a function object that implements the ActionListener interface. (Other controls have additional events besides “actions”.) For convenience, Swing allows us to label each button with a so-called action command, which is a String of our choosing: when the ActionListener’s callback is invoked, it will be given an ActionEvent object that knows the action command of the button that was clicked. In this way, we can use a single listener to listen to multiple buttons at once, and distinguish them by means of this command string. See the calls to setActionCommand and setActionListener and the implementation of actionPerformed in JFrameView.java for an example:
+
+class JFrameView extends JFrame implements ActionListener {
+  public JFrameView(String caption, IModel model) {
+    ...
+    echoButton = new JButton("Echo");           // Create a button,
+    echoButton.setActionCommand("Echo Button"); // set its command,
+    echoButton.addActionListener(this);         // set the callback,
+    this.add(echoButton);                       // and add it to the UI
+
+    exitButton = new JButton("Exit");           // ditto, for another button
+    exitButton.setActionCommand("Exit Button");
+    exitButton.addActionListener(this);
+    this.add(exitButton);
+    ...
+  }
+
+  @Override
+  public void actionPerformed(ActionEvent e) {
+    switch (e.getActionCommand()) {
+    case "Echo Button": ...
+    case "Exit Button": ...
+    }
+  }
+
+  ...
+}
+Note: Combining the event handlers of multiple buttons into a single function is only temporarily convenient: often, the code we want to run for one button is completely different from the code we want to run for a different button, so there’s not much benefit from merging them all. Instead, it is more common to create anonymous objects, or (even terser) lambda expressions, so that each button gets its own custom handler. We’ll see other idioms of setting up listeners below.
+
+5 Stage 2: Decoupling the view from the model
+The code above technically works, but it is very poorly designed: the view is responsible for mutating the model, which means there’s no separation of concerns between this view and any controller, and if we wanted to use the model with another sort of view, we’d be out of luck. In the BasicMVC directory, we start to remedy this. In particular, we want to separate out all the parts of the code that mutate the model, and isolate them within a controller.
+
+To do this, we create a Controller class that takes in the model and the view — at their interface types, not at their concrete class types. We revise the view so that it no longer has access to the model at all. (This is overly drastic; we merely want to ensure that the view does not have mutable access to the model. We can revisit this later.) We next add a method to the view interface, void setListener(ActionListener), which is the key indirection needed here. Instead of the view directly implementing the response to events, this method allows the view to take in a listener object and forward any events it receives to that listener.
+
+public class JFrameView extends JFrame implements IView {
+  public JFrameView(String caption) { // NOTE: No model!
+    ...
+    echoButton = new JButton("Echo"); // NOTE: No action listener
+    echoButton.setActionCommand("Echo Button");
+    this.add(echoButton);
+
+    exitButton = new JButton("Exit");
+    exitButton.setActionCommand("Exit Button");
+    this.add(exitButton);
+    ...
+  }
+
+  public void setListener(ActionListener listener) {
+    echoButton.addActionListener(listener); // Rather than adding *this* as a listener,
+    exitButton.addActionListener(listener); // add the provided one instead.
+  }
+
+  ...
+}
+
+public class Controller implements ActionListener {
+  public Controller(IModel m, IView v) {
+    this.model = m;
+    this.view = v;
+    view.setListener(this);
+    view.display();
+  }
+
+  @Override
+  public void actionPerformed(ActionEvent e) {
+    switch (e.getActionCommand()) {
+      case "Echo Button": ...  // same code as before, but now
+      case "Exit Button": ...  // it's extracted out of the view
+    }
+  }
+}
+The controller is now the only part of the system that has mutable access to the model. Because it requested that the view register itself as the listener for the buttons, the controller gets called exactly when necessary, and it can decide what mutations to perform on the model. The view doesn’t even know that it’s received a controller object: as far as it’s aware, the controller is simply a random ActionListener. (Note: It is overly simplified to have the Controller directly implement ActionListener — after all, there might be many controls inside the view that could raise action events, and so having a single ActionListener isn’t a scalable approach. A better approach would be to have the Controller have one or more ActionListeners — i.e., preferring composition over inheritance — but we use this simplified form for now to reduce the number of classes in this example.)
+
+Note: there is a subtle difference between the setListener method we’ve defined on our IView interface, and the addActionListener method present on the Swing components: our method’s name implicitly intends for only one listener at a time, but Swing components allow for multiple listeners. When we have multiple listeners, we’ll sometimes say that the control broadcasts its event to whoever’s listening, or that it publishes its event to whoever’s subscribed to it. There’s nothing limiting us from implementing this more general approach, but that generality wasn’t needed here.
+
+6 Stage 3: Enhancing the view with keyboard support
+Our next addition of functionality is shown in the KeyboardEvents directory: we want to add some keyboard-triggered behaviors. Specifically, we’ll add two fancy features to our UI: the ability to toggle the color of the text from black to red and back, and the ability to temporarily show the text in all-caps. We’ll switch colors every time we type the 'd' key, and we’ll temporarily capitalize the text while we’re pressing and holding the 'c' key. Interestingly, only one of these two new features requires adding a new method to our view interface.
+
+First, we’ll need to generalize our setListener method, to take in a KeyListener as well as an ActionListener. A KeyListener is analogous to a ActionListener, but as the name suggests, it listens for keyboard-related events. There are three such events: when a key is pressed, when a key is typed, and when a key is released. Pressing and holding down a key for a while will typically generate one key-pressed event, several key-typed events, and one key-released event. Just as ActionListeners accept ActionEvents, KeyListeners accept KeyEvents containing information about which key was involved. We’ll use the keyTyped event to toggle the color of the text, use the keyPressed event to capitalize the text, and use the keyReleased event to un-capitalize the text.
+
+For now, we’ll simply have our controller implement the KeyListener interface also, and pass itself along as the second argument to view.setListeners. Again, note that the view doesn’t know or care that the exact same object is being passed in as the two distinct listeners: the types ensure that it doesn’t matter. (Note: And again, this is overly simplified, and we ought to have a distinct class implement this KeyListener interface, rather than have the Controller class do everything itself.)
+
+To implement the color changing, we’ll need to add a method to our view interface to toggle the color of the text. This is intrinsically a view-specific thing, since the controller cannot know exactly how the text is displayed or which control it needs to change color. (That would leak internal implementation details of the view, and in any case, the controller only knows it has an IView rather than a particular view class.)
+
+To implement the capitalization, note that we do not actually mutate the model! This is both a good thing and a necessary thing: suppose the model text contained a mixture of upper- and lower-case letters. If we mutated the model and capitalized everything, then we would not be able to undo that change later. Instead, we ask the model for its content, and inform the view that it should display a capitalized version of the that content. (This view-only change is analogous to “zooming in” while editing a picture in Photoshop or some other image editor: the view is technically displaying only a subset of the pixels of the document, and moreover is displaying them at far more than one screen pixel per document pixel! If “zooming in” actually mutated the document, then we’d lose information and be unable to “zoom out” again.)
+
+7 Aside 1: Low-level and high-level events
+Within the KeyListener interface, there is a qualitative difference between the key-pressed and key-released events, and the key-typed event. Individual key events are incredibly, tediously low-level. Just trying to type a capital 'A' generates five events: the Shift key was pressed; the A key was pressed; the letter 'A' was typed; the A key was released; the Shift key was released. (The last two events might happen in either order, depending on which key was released first.) Notice that only one key-typed event occurred, though, and it contained exactly the text that was typed.
+
+If we had to deduce which keys were typed, merely from the key-pressed and key-released events, we’d quickly lose track. Java (and most GUI toolkits) thankfully translate those sequences into higher-level key-typed events. And this translation has an addtional benefit: consider typing non-English text on a typical QWERTY keyboard. We clearly need to type mutliple physical keys to produce one logical character (this is sometimes known as “chord” input, by analogy with pressing multiple keys on a piano keyboard), and this translation lets us ignore the individual key-pressed and key-released events if we only want to consider what text was typed.
+
+On the other hand, if we want to keep track of which keys are pressed (e.g. to control a player’s motion while a key is held down), we need to resort to the lower-level events.
+
+This low-level/high-level distinction is not clearly defined, and depends on perspective. Would we consider ActionEvents to be low-level or high-level? On the one hand, they’re clearly much higher-level than individual MouseEvents, which are analogous to KeyEvents and indicate when a mouse button is pressed, released, or clicked, or when it enters or exits some area. Indeed, JButtons register themselves as MouseListeners, and translate the relevant mouse-clicked event into an ActionEvent! (They also register themselves as KeyListeners, and generate ActionEvents when the Enter key is pressed.) But at the same time, the user of our view might not care which particular buttons we happened to use to implement the view, and there might well be multiple buttons that trigger identical actions: from that perspective, action events are too low-level and should be implementation details hidden behind some abstraction barrier.
+
+Designing a view and controller properly requires considering what level of detail we want to expose in the events that the view forwards to the controller. Our current designs expose far too low-level detail: “something happened with the following action command”, or “some key was pressed/typed/released”. These events are very general, and have no specific semantics for our application. Let’s consider the different enhancements we can make, using either low-level or high-level events. We’ll find that we might want to translate generic low-level events into application-specific high-level ones.
+
+8 Stage 4: Making the controller more flexible using low-level events
+Many applications run on multiple systems (e.g. Windows, Mac and Linux), and have hotkeys to perform various common actions — but the exact hotkey differs on each platform. It would be a shame to have to recompile the code in order to support these different keys. Similarly, many applications allow the user to customize the hotkeys that control the application. Here, it’s outright impossible for users to recompile the program to customize its behavior! Our next generalization aims to alleviate this lack of flexibility.
+
+Our prior attempt hard-coded the keys in the various key event-listeners. In the KeyboardMaps directory, we generalize this so that we can reconfigure hotkeys at runtime. To accomplish this, we design a new KeyListener implementation that uses dictionaries of Runnables instead of switch statements in its event handlers. Specifically, our KeyboardListener will contain a Map<Integer, Runnable> dictionary for its key-pressed event handler, another such dictionary for its key-released handler, and a Map<Character, Runnable> dictionary for its key-typed handler. (These Runnables are examples of the command pattern, which we talked about several lectures ago.)
+
+The handlers are pleasingly straightforward:
+
+// In the KeyboardListener class
+@Override
+public void keyTyped(KeyEvent e) {
+  if (keyTypedMap.containsKey(e.getKeyChar()))
+    keyTypedMap.get(e.getKeyChar()).run();
+}
+
+// analogously for the other two events
+Because the dictionaries are data, we can mutate them at runtime if we so choose, and therefore change which keys are mapped to which responses. (For variety’s sake, we show three different syntaxes for creating Runnables: explicit classes, anonymous classes, and lambda expressions.)
+
+// In the Controller class
+  private void configureKeyBoardListener() {
+    Map<Character, Runnable> keyTypes = new HashMap<>();
+    Map<Integer, Runnable> keyPresses = new HashMap<>();
+    Map<Integer, Runnable> keyReleases = new HashMap<>();
+
+    // Uses an explicit function-object class to provide the implementation
+    keyReleases.put(KeyEvent.VK_C, new MakeOriginalCase());
+    // Uses an anonymous object to provide the implementation
+    keyPresses.put(KeyEvent.VK_C, new Runnable() {
+      public void run() {
+        String text = model.getString();
+        text = text.toUpperCase();
+        view.setEchoOutput(text);
+      }
+    });
+    // Uses lambda-syntax to provide the implementation
+    keyTypes.put('r', () -> { view.toggleColor(); });
+
+    KeyboardListener kbd = new KeyboardListener();
+    kbd.setKeyTypedMap(keyTypes);
+    kbd.setKeyPressedMap(keyPresses);
+    kbd.setKeyReleasedMap(keyReleases);
+
+    this.view.addKeyListener(kbd);
+  }
+(In the same manner as this KeyboardListener, our implementation also generalizes the ActionListener implementation into a dictionary that maps action commands to Runnables.)
+
+This transformation, which converts explicit control flow (the switch statements we had earlier) into data (the keys of the Map) is a very common one in programming. We’ve clearly improved things somewhat, but we’re not finished: after all, if we hard-code the keys of the Map (as we did in the calls to keyPresses.put above), we haven’t really fixed anything, right? Fortunately, we know a way around this: by using a combination of a reader and builder, we could read in a “user preferences file” to figure out what keys to put in the maps, and then our code is completely agnostic to exactly which keys are needed for which handlers.
+
+9 Stage 5: Decoupling the view from the controller using high-level events
+The previous generalization relied on the view exposing its low-level events to the controller. However, we might reasonably want to trigger the same behavior from multiple UI controls. In the GeneralCommandCallbacks directory, we take this approach: our view can toggle the color of the text either via a button, or via typing the 't' key. (This is a simplified example, but is a stand-in for typical toolbar buttons doing the same thing as hotkey shortcuts.)
+
+The key innovation in this design is that we’ve eliminated the ActionListeners and KeyListeners from the controller and also from the IView interface. Instead, we have a new addFeatures method that takes in a new interface, Features, whose methods are the various high-level features and abilities of our view. Our prior interfaces exposed low-level events saying, for instance, “Hey, a button with this action command has been clicked; what should be done?” These new callbacks say, for example, “The user has requested to make the display uppercase; what should be done?” This interface is bigger than the ActionListener interface, but it’s also much more application-specific, and it advertises exactly the responsibilities a controller has to uphold for this view. It also successfully encapsulates the action commands that we leaked in prior designs: the view is now free to change those commands without breaking the controller at all.
+
+This design is quite elegant, and does the best job of loosening the coupling between the view and the controller: by encapsulating the details of which physical controls do what, the view is much more abstracted away, and the logical interface that it presents to the controller is much more application-specific. Note that the Controller class and the Features interface know absolutely nothing about Swing: they don’t even import the packages! Just like our model doesn’t need to know about how it’s being displayed, so too our controller doesn’t really need to know how the views are implemented. When possible, aspire to interfaces like this one, but be prepared to fall back to lower-level events when necessary.
+
+Note: It might seem odd that the toggleColor method is both a callback on the Features interface and a method on the IView interface — why can’t the view handle this internally? Indeed, it possibly could! (And in some circumstances, the view definitely should handle some events entirely internally: for instance, when implementing a text editor, the view should probably internally handle the sequence of low-level events that indicate the user has selected a stretch of text. Once the user does something with that text — deletes it, replaces it, copies it, etc. — the view can raise a semantically relevant high-level event with the selected content.) But consider a “bigger” version of our current program, where we have two views that we want to keep synchronized: if either of them has toggled its color, both should toggle their colors together. The only way to ensure this synchronization is for the view to forward the event to the controller, which can in turn decide to tell both views how to update themselves.
+
+Note: Once again, in the sample code and in the snippets below, we write that the Controller implements Features directly: we use an is-a relationship. A better approach is to use a has-a relationship, and have a dedicated object that implements the Features interface instead. We omit this variant here, because there are enough other details to focus on right now!
+
+10 Aside 2: Designing a Features interface
+In the previous section we introduced a Features interface, that hid the Swing-specific event listeners and instead exposed application-specific events. But how are we to know what sort of application-specific events we should have? It’s difficult to give a one-size-fits-all answer here, since by definition this will be rather application-specific. Instead, we can articulate some guidelines to follow:
+
+Avoid any view-specific classes in the Features interface wherever possible. Above, we said to eliminate any mention of Swing-specific events, and generalized it further so that the controller did not need to depend on the Swing library at all. We can easily come up with a plausible counterexample to this generality: suppose we were building a drawing program, and the view allows the user to choose a color to draw with. Surely the Features interface should expose the java.awt.Color that the user picked? In this case, though, the model also depends on java.awt.Color, and so the view isn’t introducing any new dependencies. If the model chose a different class to represent its colors, then the Features interface ought to expose that, rather than the Swing color directly.
+Treat the methods in the Features interface as requests from the user. In particular, a view might allow a user to attempt various editing operations that the controller might prohibit, or that the model might reject as invalid. In our example above, “requesting an uppercase display” fits into this mindset. Additionally, brainstorming “what might the user try to do?” can help articulate all the possible features a user might want from the program, which in turn can help design the Features methods needed.
+Not all view-specific events need to turn into Features requests. However, events that never make it to the controller are therefore intrinsically uncontrollable. In sophisticated GUIs, a single controller might need to synchronize multiple views: for instance, a split-screen text editor could have two views of the same file, whose contents should be changed in tandem. A video editor might have a timeline view at the bottom of the screen, as well as controls for the effects and a preview window, all of which must stay consistent. A spreadsheet might have a grid showing many cells of data, a textbox to edit a single cell, and a graph of multiple cells’ data, again which all must stay consistent. When implementing event handlers inside a particular view, consider whether the change being handled might need to be synchronized with multiple views: if so, then it should be raised as a Features request. If not, then it might be entirely handled within the view. For instance, scrolling a single text file might not need to inform the controller that the file has been scrolled, and so scrolling could be handled entirely within the view. On the other hand, a diff viewer that compares two files might wnat to scroll both files in unison, and so any scroll changes would need to be raised to the controller’s attention so that it can synchronize both views.
+When a Features event is raised to the controller’s attention, the view probably shouldn’t mutate itself, but rather wait for the controller to tell it to do so — this is in keeping with thinking of features as requests rather than demands. We noted this above, where toggleColor was both a method in the Features interface and also a method on the view, and the controller’s implementation of the toggleColor method turned around and called the view’s method, and we said this might seem overly roundabout. We gave one example where this was needed for synchronization of multiple views. Another might be triggering some resource-limited effect (where the resource might be tracked by the model, like in-game bonuses, or the resource might be controller-specific, like live-streaming a video of a gameplay). The view shouldn’t modify itself until the controller (and possibly model too) has confirmed that the request can go through.
+Any event that is handled entirely within the view is intrinsically more difficult to test. We would have to synthesize the low-level UI events, which may be impractical or even impossible to do sufficiently. By decoupling the particular UI event that triggers behavior from the Features implementation that actually provides the behavior, we limit the hard-to-test code to just the “wiring” between the event listeners and the Features object. Since all the interesting behavior is now in the Features object, and since its methods depend only on application-specific concepts and types, we can easily create a mock view that triggers Features methods without needing the actual Swing events. This allows for test cases analogous to those we saw in Lecture 8, with all the benefits they bring.
+11 Stage 6: Further enhancements using InputMaps and ActionMaps
+Our last revision eliminated the flexibility of dynamically changing hotkeys and reverted to hard-coding the keys in the view’s implementation of its own key listener. Combining the flexibility of the KeyboardListener and its dictionaries, with the high-level events of the Features interface, is aesthetically tricky: who should control which keys do what? In some sense, it almost feels like the choice should be made not by our current controller, which is controlling a particular model and view, but rather to some hypothetical “application controller”, that controls the overall application. We’ve already encountered this in practice: in IntelliJ, there are both project-specific settings and application-wide settings, and different dialogs control those different features.
+
+Additionally, implementing the keyboard-listening dictionaries is tedious: surely this functionality could be implemented once and for all, and we wouldn’t need to redo it in every single application?
+
+The solution, once again, is a layer of indirection. We’ve seen above that Swing components have a notion of an action command, and that we can cause code to run depending on which action was triggered. Combining several of these actions together should seem reminiscent of the KeyboardListener dictionaries we just built. In fact, Swing has a concept of an ActionMap, which is essentially just such a dictionary from action commands to actions.1 An Action in Swing has many potential subclasses; we’ll focus on the AbstractAction class, which we can subclass ourselves to create new action handlers. For instance, we might write
+
+Action makeOriginalCase = new AbstractAction() {
+  public void actionPerformed(ActionEvent e) {
+    String text = model.getString();
+    view.setEchoOutput(text);
+  }
+};
+Action makeCaps = new AbstractAction() {
+  public void actionPerformed(ActionEvent e) {
+    String text = model.getString();
+    text = text.toUpperCase();
+    view.setEchoOutput(text);
+  }
+};
+Action toggleColor = new AbstractAction() {
+  public void actionPerformed(ActionEvent e) {
+    view.toggleColor();
+  }
+};
+This is all well and good, and now we have yet one more way of representing runnable bits of code, but how should we actually associate these actions with their keyboard triggers? First, we associate these Actions with their action commands:
+
+// Somewhere in our View class:
+
+aComponent.getActionMap().put("restoreLowercase", makeOriginalCase);
+aComponent.getActionMap().put("makeCaps", makeCaps);
+aComponent.getActionMap().put("toggleColor", toggleColor);
+We then need the second piece of the indirection: an InputMap. InputMaps associate KeyStrokes with action commands. A KeyStroke describes our key-press, key-release, and key-type low-level events in a uniform manner. When a low-level key event matches something in an InputMap, the associated action command is looked up in the ActionMap and fired. So we can continue our code as follows:
+
+// Somewhere in our View class:
+
+// Use simplest constructor to describe a key-press
+aComponent.getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_C), "makeCaps");
+// Use another constructor to describe key-releases
+aComponent.getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_C, true), "restoreLowercase");
+// Yet another constructor lets us describe key-typed events
+aComponent.getInputMap().put(KeyStroke.getKeyStroke("typed r"), "toggleColor");
+Note: InputMaps and ActionMaps apply only to JComponents, and not to JFrames directly. However, we can easily add a component to our frame for the sole purpose of handling key events, and we can specify that its InputMap be used whenever the frame has focus at all.
+
+This seems like a lot of machinery to introduce, and it would be unwieldy if it weren’t so reusable. The critical design patterns here are:
+
+We have a mechanism for translating low-level (KeyEvents) into mid-level action commands.
+We have transformed control flow (of what code to run based on what key was pressed) into data (a map of KeyStrokes).
+We have a mechanism from translating mid-level action commands into actual runnable actions.
+The code still suffers from one problem: the Actions themselves feel like they belong in the controller (since they refer to model and view), but are referenced directly in the view (in the getActionMap().put(...) lines). We can combine these maps with our Features design, to get one final translation from mid-level action commands to high-level events:
+
+// NOTE: this class makes no mention of Actions or Controllers.
+public class JFrameView extends JFrame implements IView {
+  KeyComponent keyComponent;
+
+  public JFrameView(String caption) {
+    super(caption);
+    ...
+    this.keyComponent = new KeyComponent();
+    this.add(keyComponent);
+  }
+
+  public void setHotKey(KeyStroke key, String featureName) {
+    this.keyComponent.getInputMap().put(key, featureName);
+  }
+
+  public void addFeatures(Features features) {
+    this.keyComponent.addFeatures(features);
+  }
+}
+
+// NOTE: Neither does this class!  It only refers to Features.
+class KeyComponent extends JPanel {
+  List<Features> featureListeners = new ArrayList<>();
+
+  // Includes this new feature listener in responding to keys
+  void addFeatures(Features f) { this.featureListeners.add(f); }
+
+  KeyComponent() {
+    // Install action command -> Feature callback associations
+    this.getActionMap().put("makeCaps", new AbstractAction() {
+      public void actionPerformed(ActionEvent e) {
+        for (Features f : featureListeners)
+          f.makeUppercase();
+      }
+    });
+    this.getActionMap().put("restoreLowercase", new AbstractAction() {
+      public void actionPerformed(ActionEvent e) {
+        for (Features f : featureListeners)
+          f.restoreLowercase();
+      }
+    });
+    this.getActionMap().put("toggleColor", new AbstractAction() {
+      public void actionPerformed(ActionEvent e) {
+        for (Features f : featureListeners)
+          f.toggleColor();
+      }
+    });
+    ...
+  }
+}
+
+// NOTE: Only the Controller needs to know how to implement Features.
+public class Controller implements Features {
+  private IModel model;
+  private IView view;
+
+  ...
+
+  // These are the high-level event handlers we care about:
+  @Override
+  public void toggleColor() {
+    view.toggleColor();
+  }
+
+  @Override
+  public void makeUppercase() {
+    String text = model.getString();
+    text = text.toUpperCase();
+    view.setEchoOutput(text);
+  }
+
+  @Override
+  public void restoreLowercase() {
+    String text = model.getString();
+    view.setEchoOutput(text);
+  }
+
+  // This attaches this controller as our features listener
+  public void setView(IView v) {
+    this.view = v;
+    view.addFeatures(this);
+
+    // Choose the keys we want
+    view.setHotKey(KeyStroke.getKeyStroke("pressed c"), "makeCaps");
+    view.setHotKey(KeyStroke.getKeyStroke("released c"), "restoreLowercase");
+    view.setHotKey(KeyStroke.getKeyStroke("typed r"), "toggleColor");
+  }
+
+  ...
+}
+12 Exercises
+At the top of this lecture are starter files for a GUI version of the Turtles example we worked through in Lecture 10. The TurtleGraphicsView does not currently do anything. Enhance this code with a new TurtlePanel class that extends JPanel, and override its paintComponent method to draw whatever you want, just to confirm that it works.
+
+Next, enhance the IView interface so you can pass the relevant information from the model, through the controller, into the view and into your TurtlePanel class. Once you’ve connected the pieces, use this information in your paintComponent implementation to draw the turtle’s trace.
+
+The links at the top of the lecture include a “solution” implementation; do not to look at that until you’ve tried to implement this yourself.
+
+The IView interface contains one method for setting up an event listener. What is its signature? Does it seem like a high-level event to you, or a low-level one? If you think it’s too low-level, can you think of a better, higher-level signature to use? If you think it’s sufficiently high-level, why do you think so?
+
+1Actions themselves are more generally useful in Swing than just for keyboard interaction, but we’ll focus on just the keyboard part here.

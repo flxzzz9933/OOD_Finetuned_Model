@@ -1,0 +1,23 @@
+Lecture 7: In-class Exercise: A Model for Tic Tac Toe
+Java source (.zip)
+Due: Ideally by the end of class, but not later than 8:59pm the day your section does the exercise.
+
+1 A Model for Tic Tac Toe
+The purpose of this exercise is to give you practice with implementing the Model component of the Model-View-Controller design pattern.
+
+In the starter code, you are given an interface representing a game of Tic Tac Toe, along with an enum representing the players (X and O). Your task is to implement the TicTacToe interface.
+
+You may work freely with other students on this exercise!
+
+You will need one class: a public class named TicTacToeModel, with a single public constructor that takes no arguments. The class definition, with a toString() implementation to help with debugging, are provided to you in the starter code. You will fill in the fields and remaining method definitions as appropriate. You may also define other classes at your option as needed.
+
+The game grid cells are numbered by row and column starting from 0. For example, the upper left position is row 0, column 0 (or [0][0] in the 2D array returned by getBoard()), the upper middle position is row 0, column 1 ([0][1]), the lower right is [2][2].
+
+2 Testing
+We have supplied you with some basic JUnit tests as part of the starter code. Use these to verify that your implementation is correct, and write additional tests of your own.
+
+3 Notes to Keep in Mind
+Avoid duplicating code as much as possible. Consider using non-public methods as means of creating reusable pieces of functionality.
+Be sure to use access modifiers, private and public, as well as final, appropriately.
+In your getters, be careful to return a copy of, and not a direct reference to, any mutable internal state in your model.
+Include JavaDoc for your classes and constructors as appropriate. You do not need to repeat JavaDoc already existing in a superclass or interface when you override a method. This is true for the course in general.

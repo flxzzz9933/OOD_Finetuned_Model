@@ -1,0 +1,119 @@
+Lecture 14: The Observer Pattern
+In the last lecture we introduced the idea of a “Features interface” that described a way to
+
+isolate the controller from the low-level Swing components inside the view, and
+simultaneously, allow the view to have multiple UI components trigger the same logical callback on the controller.
+We called these “high-level events”, since they were application-specific events as opposed to “low-level” general-purpose events. This idea of defining our own application-specific events is a very common one, and generalizes the Features interface idea into something known as the Observer Patern.1
+
+1 Motivating example: buying concert tickets
+Suppose you are interested in getting tickets for a popular upcoming concert. You know that tickets will sell out quickly, and you don’t want to miss your opportunity. So you signup for the mailing list for the ticket service, and wait for an email telling you that tickets are now available. Of course, mailing lists being what they are, you’ll probably get a bunch of unwanted messages telling you about uninteresting concerts as well, so you need to read the emails to check which concert has just gone on sale.
+
+Let’s try to represent this in code.
+
+2 Setting the stage
+Let’s assume we have a class TicketSeller that handles ticket sales for lots of concerts, and a class Person to represent you or other people interested in concerts. (To keep things simple, we’ll just assume each concert has a unique name that we’ll represent as a String; in practice, the data here might be more interesting, but it’ll obscure the pattern we’re looking for here.)
+
+class TicketSeller {
+  Ticket purchaseTicketFor(String concertName) { ... sell a ticket ... }
+}
+
+class Person {
+  void tryToBuyTicketFor(String concertName) {
+    ???
+  }
+}
+If a concert is sold out or not even available yet, then TicketSeller#purchaseTicketFor will fail, so our goal is to call that method as soon as possible, but no sooner. So in Person#tryToBuyTicketsFor, we can’t immediately call that method. Instead, we need to “sign up for the mailing list” somehow.
+
+To do that, let’s define an interface
+
+interface TicketNotificationSubscriber {
+  void ticketsAvailableFor(String concertName);
+}
+This is the analogue of the Features interface from last lecture. With Features, our controller was interested in being called back, so it registered with the view, and the view called its methods when appropriate. Here, our TicketSeller will call the ticketsAvailableFor method on any objects that have signed up for such notifications, and our Person objects will implement that interface and sign up for the notifications.
+
+class Person implements TicketNotificationSubscriber {
+  void tryToBuyTicketsFor(String concertName, TicketSeller seller) {
+    seller.signUpForNotifications(this);
+  }
+
+  public void ticketsAvailableFor(String concertName) {
+    // the seller will call us back when concerts become available
+  }
+}
+
+class TicketSeller {
+  void signUpforNotifications(TicketNotificationSubscriber obs) {
+    ???
+  }
+}
+Now we just have to connect the last few pieces. The TicketSeller will need to maintain a “mailing list” of everyone who’s signed up to be notified. And whenever a new concert is announced, it should broadcast that announcement to everyone who’s signed up:
+
+class TicketSeller {
+  List<TicketNotificationSubscriber> subscriers = new ArrayList<>();
+  void signUpForNotifications(TicketNotificationSubscriber sub) {
+    this.subscribers.add(sub);
+  }
+
+  void announceNewConcert(String name) {
+    for (TicketNotificationSubscriber sub : this.subscribers) {
+      sub.ticketsAvailableFor(name);
+    }
+  }
+}
+Finally, we can complete the Person implementation. Notice that they’ll get notified for all concerts, so they need to keep track of the one concert they’re interested in:
+
+class Person implements TicketNotificationSubscriber {
+  String interestedInConcert;
+  TicketSeller seller;
+  void tryToBuyTicketsFor(String concertName, TicketSeller seller) {
+    this.interestedInConcert = concertName;
+    this.seller = seller;
+    seller.signUpForNotifications(this);
+  }
+
+  public void ticketsAvailableFor(String concertName) {
+    if (concertName.equals(this.interestedInConcert)) {
+      // Hooray, tickets are available for the concert we're interested in
+      seller.purchaseTicketFor(concertName);
+    }
+  }
+}
+Notice the similarities to ActionListeners: the Person gets called back with the name of what event has occurred, and can choose what to do about it based on that information. Notice also the differences: the callback here is talking about concerts, which is clearly a very application-specific sort of event.
+
+3 Enhancements and subtleties
+The names TicketSeller, signUpForNotifications, TicketNotificationSubscriber and ticketsAvailableFor are whimsical and application-specific, but they illustrate an important point: this pattern applies to high-level events just as well as to low-level events. Regardless of the name, the Observer Pattern describes this common scenario, of multiple entities that are interested in messages being sent by some common source. There can be many observers for a single message-sender, and a single observer might be interested in many message-senders.
+
+The general names for this pattern look as follows:2
+
+class Subject {
+  List<Observer> observers;
+  void addObserver(Observer obs) { observers.add(obs); }
+
+  // This method gets called by other methods in the Subject class as needed
+  private void notifyAllSomethingHappened() {
+    for (Observer obs : this.observers) {
+      obs.somethingHappened();
+    }
+  }
+}
+
+interface Observer {
+  void somethingHappend();
+}
+
+class SomeObserver implements Observer {
+  void somethingHappened() { ... }
+}
+
+// somewhere in the code
+someSubject.addObserver(someObserver);
+We might want to enhance the Subject class to allow unsubscribing from notifications, via a removeObserver method.
+We might want to send more information along in the somethingHappened method, including which Subject sent the notification, or what the notification is about.
+Currently, each Person gets notified for all concerts, leading to a lot of spammy messages. We might want to enhance the addObserver method to specify what notifications we’re interested in, and allow the TicketSeller to only send the notifications we care about. In general, we might want the Subject class to maintain a mapping from specific topics to the observers interested in just those topics, and only somethingHappened() the observers that care about that topic. This leads to a more complex Subject implementation, but a possibly more-efficient system overall.
+Our current Observer interface has only a single method in it. But as we saw with Features, there could easily be multiple application-specific notifications we might want to send.
+Thinking about the TicketSeller again, if it sends out a notification for each individual concert, then the amount of spam depends on how many concerts there are. We might instead want to group together several updates into a single batch notification (for example, configuring Piazza to notify you for each individual post, vs notifying you once every few hours with a batch of posts at once).
+The Observer pattern is a general-purpose event handling mechanism, and hopefully it’s clear that its utility generalizes beyond just handling UI events.
+
+1It’s also known as “pub/sub”, “publisher/subscriber”, “listeners”, or other similar terms.
+
+2The typical name for the method in Observer is notify(), but alas Java already defines a method with that name, for different purposes. It actually is a use of the Observer pattern, but with a very specific purpose, rather than the general design that we’re showing here.

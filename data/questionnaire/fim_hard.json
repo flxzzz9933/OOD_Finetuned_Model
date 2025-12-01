@@ -1,0 +1,111 @@
+{
+  "metadata": {
+    "type": "fim_hard",
+    "count": 10,
+    "difficulty": "hard",
+    "description": "Majority of code missing - requires understanding of design patterns and architecture",
+    "topics_covered": ["adapter", "observer", "mvc", "decorator", "strategy", "command"]
+  },
+  "questions": [
+    {
+      "id": "fim_hard_001",
+      "topic": "adapter",
+      "description": "Implement a complete two-way adapter class that implements both IntSet1 and IntSet2, wrapping an IntSet2 adaptee",
+      "prefix": "public final class IntSet2ToIntSet1Adapter implements IntSet1, IntSet2 {\n  private final IntSet2 adaptee;\n\n  public IntSet2ToIntSet1Adapter(IntSet2 adaptee) {\n    this.adaptee = Objects.requireNonNull(adaptee);\n  }\n\n",
+      "suffix": "}",
+      "expected_answer": "  // IntSet1 methods - translate element operations to set operations\n  @Override\n  public void add(int value) {\n    adaptee.unionWith(IntSet2Impl.singleton(value));\n  }\n\n  @Override\n  public void remove(int value) {\n    adaptee.differenceFrom(IntSet2Impl.singleton(value));\n  }\n\n  @Override\n  public boolean member(int value) {\n    return adaptee.isSupersetOf(IntSet2Impl.singleton(value));\n  }\n\n  @Override\n  public Iterator<Integer> iterator() {\n    return adaptee.asList().iterator();\n  }\n\n  // IntSet2 methods - delegate directly to adaptee\n  @Override\n  public void unionWith(IntSet2 other) {\n    adaptee.unionWith(other);\n  }\n\n  @Override\n  public void differenceFrom(IntSet2 other) {\n    adaptee.differenceFrom(other);\n  }\n\n  @Override\n  public boolean isSupersetOf(IntSet2 other) {\n    return adaptee.isSupersetOf(other);\n  }\n\n  @Override\n  public List<Integer> asList() {\n    return adaptee.asList();\n  }",
+      "hints": ["IntSet1 methods need to translate single elements to singleton sets", "IntSet2 methods can delegate directly", "Use singleton() for element-to-set conversion"],
+      "context_chunks": ["Lecture 17 - Two-way adapter"]
+    },
+    {
+      "id": "fim_hard_002",
+      "topic": "adapter",
+      "description": "Implement a complete EnumerationIterator adapter class that wraps an Enumeration to work as an Iterator",
+      "prefix": "public class EnumerationIterator<T> implements Iterator<T> {\n  private final Enumeration<T> enumeration;\n\n  public EnumerationIterator(Enumeration<T> enumeration) {\n    this.enumeration = Objects.requireNonNull(enumeration);\n  }\n\n",
+      "suffix": "}",
+      "expected_answer": "  @Override\n  public boolean hasNext() {\n    return enumeration.hasMoreElements();\n  }\n\n  @Override\n  public T next() {\n    if (!hasNext()) {\n      throw new NoSuchElementException();\n    }\n    return enumeration.nextElement();\n  }\n\n  @Override\n  public void remove() {\n    throw new UnsupportedOperationException(\"Cannot remove from an Enumeration\");\n  }",
+      "hints": ["hasMoreElements maps to hasNext", "nextElement maps to next", "remove must throw UnsupportedOperationException"],
+      "context_chunks": ["Lecture 17 - Enumeration to Iterator adapter"]
+    },
+    {
+      "id": "fim_hard_003",
+      "topic": "mvc",
+      "description": "Implement the playGame method for a TicTacToe console controller that reads moves and plays until game over",
+      "prefix": "public class TicTacToeConsoleController implements TicTacToeController {\n  private final Scanner scan;\n  private final Appendable out;\n\n  public TicTacToeConsoleController(Readable in, Appendable out) {\n    this.scan = new Scanner(in);\n    this.out = out;\n  }\n\n  @Override\n  public void playGame(TicTacToe model) {\n",
+      "suffix": "  }\n\n  private void append(String message) {\n    try {\n      out.append(message);\n    } catch (IOException e) {\n      throw new IllegalStateException(\"Failed to append output\", e);\n    }\n  }\n}",
+      "expected_answer": "    Objects.requireNonNull(model);\n    append(model.toString() + \"\\n\");\n    append(\"Enter move as row col (1-indexed):\\n\");\n\n    while (!model.isGameOver()) {\n      append(\"Player \" + model.getTurn() + \"'s turn:\\n\");\n      try {\n        int row = scan.nextInt() - 1;\n        int col = scan.nextInt() - 1;\n        model.move(row, col);\n        append(model.toString() + \"\\n\");\n      } catch (InputMismatchException e) {\n        append(\"Invalid input. Enter row and column as integers.\\n\");\n        scan.next(); // consume invalid token\n      } catch (IllegalArgumentException e) {\n        append(\"Invalid move: \" + e.getMessage() + \"\\n\");\n      }\n    }\n\n    if (model.getWinner() != null) {\n      append(\"Game over! Winner: \" + model.getWinner() + \"\\n\");\n    } else {\n      append(\"Game over! It's a tie!\\n\");\n    }",
+      "hints": ["Loop while game is not over", "Read row and col as 1-indexed, convert to 0-indexed", "Handle invalid input gracefully", "Report winner or tie at end"],
+      "context_chunks": ["Lecture 9 - TicTacToe controller"]
+    },
+    {
+      "id": "fim_hard_004",
+      "topic": "decorator",
+      "description": "Implement a complete InstrumentedIntSet using composition that counts all add operations",
+      "prefix": "public class InstrumentedIntSet implements IntSet {\n  private final IntSet delegate;\n  private int addCount;\n\n  public InstrumentedIntSet(IntSet delegate) {\n    this.delegate = Objects.requireNonNull(delegate);\n    this.addCount = 0;\n  }\n\n  public int getAddCount() {\n    return addCount;\n  }\n\n",
+      "suffix": "}",
+      "expected_answer": "  @Override\n  public void add(int value) {\n    addCount++;\n    delegate.add(value);\n  }\n\n  @Override\n  public void addAll(Collection<Integer> values) {\n    addCount += values.size();\n    delegate.addAll(values);\n  }\n\n  @Override\n  public void remove(int value) {\n    delegate.remove(value);\n  }\n\n  @Override\n  public boolean member(int value) {\n    return delegate.member(value);\n  }\n\n  @Override\n  public Iterator<Integer> iterator() {\n    return delegate.iterator();\n  }",
+      "hints": ["Increment count in add and addAll", "addAll increments by collection size, not per element", "Other methods just delegate", "This avoids the double-counting problem of inheritance"],
+      "context_chunks": ["Lecture 11 - Composition over inheritance"]
+    },
+    {
+      "id": "fim_hard_005",
+      "topic": "command",
+      "description": "Implement a complete MoveCommand for turtle graphics with undo support",
+      "prefix": "public class MoveCommand implements TurtleCommand {\n  private final TurtleModel turtle;\n  private final double distance;\n  private Position2D previousPosition;\n\n  public MoveCommand(TurtleModel turtle, double distance) {\n    this.turtle = Objects.requireNonNull(turtle);\n    this.distance = distance;\n  }\n\n",
+      "suffix": "}",
+      "expected_answer": "  @Override\n  public void execute() {\n    previousPosition = turtle.getPosition();\n    turtle.move(distance);\n  }\n\n  @Override\n  public void undo() {\n    if (previousPosition == null) {\n      throw new IllegalStateException(\"Cannot undo: command not executed\");\n    }\n    turtle.setPosition(previousPosition);\n  }\n\n  @Override\n  public boolean canUndo() {\n    return previousPosition != null;\n  }",
+      "hints": ["Save position before executing", "Restore saved position on undo", "Track whether command has been executed"],
+      "context_chunks": ["Lecture 10 - Command pattern"]
+    },
+    {
+      "id": "fim_hard_006",
+      "topic": "strategy",
+      "description": "Implement a CornerStrategy for TicTacToe that prioritizes corner moves, then center, then edges",
+      "prefix": "public class CornerStrategy implements TicTacToeStrategy {\n  private static final int[][] CORNERS = {{0,0}, {0,2}, {2,0}, {2,2}};\n  private static final int[] CENTER = {1, 1};\n  private static final int[][] EDGES = {{0,1}, {1,0}, {1,2}, {2,1}};\n\n  @Override\n  public Coord chooseMove(TicTacToeModel model, Piece forWhom) {\n",
+      "suffix": "  }\n\n  private boolean isEmpty(TicTacToeModel model, int row, int col) {\n    return model.getPieceAt(row, col) == null;\n  }\n}",
+      "expected_answer": "    // Try corners first\n    for (int[] corner : CORNERS) {\n      if (isEmpty(model, corner[0], corner[1])) {\n        return new Coord(corner[0], corner[1]);\n      }\n    }\n\n    // Try center\n    if (isEmpty(model, CENTER[0], CENTER[1])) {\n      return new Coord(CENTER[0], CENTER[1]);\n    }\n\n    // Try edges\n    for (int[] edge : EDGES) {\n      if (isEmpty(model, edge[0], edge[1])) {\n        return new Coord(edge[0], edge[1]);\n      }\n    }\n\n    // No move available\n    return null;",
+      "hints": ["Check positions in priority order", "Return first empty position found", "Return null if no moves available"],
+      "context_chunks": ["Lecture 16 - Strategy pattern"]
+    },
+    {
+      "id": "fim_hard_007",
+      "topic": "mvc",
+      "description": "Implement a complete TicTacToe model with board state, move validation, and win detection",
+      "prefix": "public class TicTacToeModel implements TicTacToe {\n  private final Player[][] board;\n  private Player turn;\n  private boolean gameOver;\n  private Player winner;\n\n  public TicTacToeModel() {\n    board = new Player[3][3];\n    turn = Player.X;\n    gameOver = false;\n    winner = null;\n  }\n\n",
+      "suffix": "\n  private boolean checkWin(Player p) {\n    // Check rows, columns, and diagonals\n    for (int i = 0; i < 3; i++) {\n      if (board[i][0] == p && board[i][1] == p && board[i][2] == p) return true;\n      if (board[0][i] == p && board[1][i] == p && board[2][i] == p) return true;\n    }\n    if (board[0][0] == p && board[1][1] == p && board[2][2] == p) return true;\n    if (board[0][2] == p && board[1][1] == p && board[2][0] == p) return true;\n    return false;\n  }\n\n  private boolean isBoardFull() {\n    for (int r = 0; r < 3; r++) {\n      for (int c = 0; c < 3; c++) {\n        if (board[r][c] == null) return false;\n      }\n    }\n    return true;\n  }\n}",
+      "expected_answer": "  @Override\n  public void move(int row, int col) {\n    if (gameOver) {\n      throw new IllegalStateException(\"Game is already over\");\n    }\n    if (row < 0 || row > 2 || col < 0 || col > 2) {\n      throw new IllegalArgumentException(\"Position out of bounds\");\n    }\n    if (board[row][col] != null) {\n      throw new IllegalArgumentException(\"Cell already occupied\");\n    }\n\n    board[row][col] = turn;\n\n    if (checkWin(turn)) {\n      winner = turn;\n      gameOver = true;\n    } else if (isBoardFull()) {\n      gameOver = true;\n    } else {\n      turn = (turn == Player.X) ? Player.O : Player.X;\n    }\n  }\n\n  @Override\n  public Player getTurn() {\n    return turn;\n  }\n\n  @Override\n  public Player getWinner() {\n    return winner;\n  }\n\n  @Override\n  public boolean isGameOver() {\n    return gameOver;\n  }\n\n  @Override\n  public Player getPieceAt(int row, int col) {\n    if (row < 0 || row > 2 || col < 0 || col > 2) {\n      throw new IllegalArgumentException(\"Position out of bounds\");\n    }\n    return board[row][col];\n  }",
+      "hints": ["Validate game state and move coordinates", "Check for win after each move", "Switch turns if game continues", "Full board with no winner is a tie"],
+      "context_chunks": ["Lecture 7 - TicTacToe model"]
+    },
+    {
+      "id": "fim_hard_008",
+      "topic": "gui",
+      "description": "Implement a TTTPanel that draws the TicTacToe board and handles mouse clicks",
+      "prefix": "public class TTTPanel extends JPanel {\n  private final TicTacToe model;\n  private final TicTacToeController controller;\n  private static final int CELL_SIZE = 100;\n\n  public TTTPanel(TicTacToe model, TicTacToeController controller) {\n    this.model = model;\n    this.controller = controller;\n    setPreferredSize(new Dimension(CELL_SIZE * 3, CELL_SIZE * 3));\n",
+      "suffix": "  }\n\n  private void drawX(Graphics g, int row, int col) {\n    int x = col * CELL_SIZE + 10;\n    int y = row * CELL_SIZE + 10;\n    g.drawLine(x, y, x + CELL_SIZE - 20, y + CELL_SIZE - 20);\n    g.drawLine(x + CELL_SIZE - 20, y, x, y + CELL_SIZE - 20);\n  }\n\n  private void drawO(Graphics g, int row, int col) {\n    int x = col * CELL_SIZE + 10;\n    int y = row * CELL_SIZE + 10;\n    g.drawOval(x, y, CELL_SIZE - 20, CELL_SIZE - 20);\n  }\n}",
+      "expected_answer": "    addMouseListener(new MouseAdapter() {\n      @Override\n      public void mouseClicked(MouseEvent e) {\n        int col = e.getX() / CELL_SIZE;\n        int row = e.getY() / CELL_SIZE;\n        if (row >= 0 && row < 3 && col >= 0 && col < 3) {\n          controller.handleCellClick(row, col);\n          repaint();\n        }\n      }\n    });\n  }\n\n  @Override\n  protected void paintComponent(Graphics g) {\n    super.paintComponent(g);\n\n    // Draw grid lines\n    g.setColor(Color.BLACK);\n    for (int i = 1; i < 3; i++) {\n      g.drawLine(i * CELL_SIZE, 0, i * CELL_SIZE, 3 * CELL_SIZE);\n      g.drawLine(0, i * CELL_SIZE, 3 * CELL_SIZE, i * CELL_SIZE);\n    }\n\n    // Draw pieces\n    for (int row = 0; row < 3; row++) {\n      for (int col = 0; col < 3; col++) {\n        Player p = model.getPieceAt(row, col);\n        if (p == Player.X) {\n          drawX(g, row, col);\n        } else if (p == Player.O) {\n          drawO(g, row, col);\n        }\n      }\n    }",
+      "hints": ["Use MouseAdapter to handle clicks", "Convert pixel coordinates to row/col", "Override paintComponent, call super first", "Draw grid lines and pieces"],
+      "context_chunks": ["Lecture 15 - Graphical TicTacToe"]
+    },
+    {
+      "id": "fim_hard_009",
+      "topic": "observer",
+      "description": "Implement a complete Observable model with observer registration and notification",
+      "prefix": "public class ObservableTicTacToe implements TicTacToe {\n  private final TicTacToe delegate;\n  private final List<TicTacToeObserver> observers;\n\n  public ObservableTicTacToe(TicTacToe delegate) {\n    this.delegate = Objects.requireNonNull(delegate);\n    this.observers = new ArrayList<>();\n  }\n\n",
+      "suffix": "}",
+      "expected_answer": "  public void addObserver(TicTacToeObserver observer) {\n    observers.add(Objects.requireNonNull(observer));\n  }\n\n  public void removeObserver(TicTacToeObserver observer) {\n    observers.remove(observer);\n  }\n\n  private void notifyObservers() {\n    for (TicTacToeObserver obs : observers) {\n      obs.update(this);\n    }\n  }\n\n  @Override\n  public void move(int row, int col) {\n    delegate.move(row, col);\n    notifyObservers();\n  }\n\n  @Override\n  public Player getTurn() {\n    return delegate.getTurn();\n  }\n\n  @Override\n  public Player getWinner() {\n    return delegate.getWinner();\n  }\n\n  @Override\n  public boolean isGameOver() {\n    return delegate.isGameOver();\n  }\n\n  @Override\n  public Player getPieceAt(int row, int col) {\n    return delegate.getPieceAt(row, col);\n  }",
+      "hints": ["Add/remove observer methods manage the list", "notifyObservers calls update on each observer", "move must notify after delegating", "Other methods just delegate without notification"],
+      "context_chunks": ["Observer pattern with MVC"]
+    },
+    {
+      "id": "fim_hard_010",
+      "topic": "command",
+      "description": "Implement a CommandHistory class that maintains executed commands and supports undo/redo",
+      "prefix": "public class CommandHistory {\n  private final Stack<TurtleCommand> undoStack;\n  private final Stack<TurtleCommand> redoStack;\n\n  public CommandHistory() {\n    undoStack = new Stack<>();\n    redoStack = new Stack<>();\n  }\n\n",
+      "suffix": "}",
+      "expected_answer": "  public void executeCommand(TurtleCommand command) {\n    command.execute();\n    undoStack.push(command);\n    redoStack.clear(); // Clear redo stack on new command\n  }\n\n  public boolean canUndo() {\n    return !undoStack.isEmpty();\n  }\n\n  public boolean canRedo() {\n    return !redoStack.isEmpty();\n  }\n\n  public void undo() {\n    if (!canUndo()) {\n      throw new IllegalStateException(\"Nothing to undo\");\n    }\n    TurtleCommand command = undoStack.pop();\n    command.undo();\n    redoStack.push(command);\n  }\n\n  public void redo() {\n    if (!canRedo()) {\n      throw new IllegalStateException(\"Nothing to redo\");\n    }\n    TurtleCommand command = redoStack.pop();\n    command.execute();\n    undoStack.push(command);\n  }\n\n  public void clear() {\n    undoStack.clear();\n    redoStack.clear();\n  }",
+      "hints": ["New commands clear redo stack", "Undo moves command from undo to redo stack", "Redo moves command from redo to undo stack", "Check stack emptiness before operations"],
+      "context_chunks": ["Lecture 10 - Command pattern with undo"]
+    }
+  ]
+}

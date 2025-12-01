@@ -1,0 +1,389 @@
+Lecture 8: Controllers and Mock Objects
+SlidesJava source (.zip)
+Objectives of the lecture
+This lecture starts from a program that works correctly, but is not designed to be easily tested. Incrementally we abstract the input and output sources of this program to not only make it work with several different kinds of I/O, but also make it more suitable for automated testing. We also motivate the concepts of mocks: “stub” classes that substitute for the real classes, but help in testing. We also suggest a possible design to streamline classes that accept sequences of inputs and produce corresponding outputs.
+
+Read through the slides above first, before reading through the lecture notes below.
+
+1 Version 1: Writing a standalone program
+Up until now, we’ve never actually written a program that could run on its own: we’ve relied on the tester library to kick things off for us. To write a more typical program, Java relies on a particular convention to find the entry point for the program, i.e. the initial piece of code to run. We need a
+
+function — because at the instant our program starts, we don’t have any objects constructed yet
+with a well-known name — because otherwise how would Java know what to call?
+with a well-known signature — or else how could Java call it correctly?
+that returns nothing — since no one would be listening for the return value anyway
+Since Java doesn’t have functions, per se, we’ll need to use a static method instead. To make sure the name is visible, the method must be public. By convention, the method must be named main, and it must take a String[] as its single argument. (This array contains the zero or more command line parameters that we use when running the program. We’ll come back to this in a later lecture.) Since this is a method, we have to stick it in some class, but the name of that class isn’t special; instead, we’ll tell Java which class to find our main method in.
+
+public class OurMainClass {
+  public static void main(String[] args) {
+    ...
+  }
+}
+In IntelliJ, once you’ve written such a class, a green "Play" triangle will appear next to the class name, indicating you can run the program via this class. (Under the hood, IntelliJ is passing the name of this class as a command line parameter to Java, so that it knows which class’s main to call.)
+Our initial implementation is going to be very simple: it will read two numbers, and print out their sum:
+
+import java.util.Scanner;
+
+public class SimpleCalc1 {
+  public static void main(String[] args) {
+    int num1, num2;
+    Scanner scan = new Scanner(System.in);
+    num1 = scan.nextInt();
+    num2 = scan.nextInt();
+    System.out.printf("%d", num1 + num2);
+  }
+}
+(A Scanner is a utility class that makes it much easier for us to read inputs from a source: instead of having to read in text and laboriously try to parse it into numbers or booleans or whatever, we can ask the Scanner to do it for us.)
+
+The code above is simple, and it obviously works (assuming Scanners do what they’re supposed to do). So how can we test it? What sorts of inputs might a user type in when using this program, and how might they go wrong?
+
+There are two broad categories of things to test here: is the input being obtained correctly, and is the arithmetic being performed correctly? Let’s tackle the second one, first.
+
+2 Version 2: Extracting a model
+The first problem with the code above is that we have no programmatic control over it. The inputs come directly from the user — they’re hardcoded to come from System.in — and the arithmetic is performed as a subexpression whose output is sent directly to System.out. Let’s extract that expression into a helper function, which will be the beginnings of our model.
+
+interface SimpleCalc {
+  int add(int num1, int num2);
+}
+
+class Calculator implements SimpleCalc {
+  public int add(int num1, int num2) { return num1 + num2; }
+}
+We can now rewrite our main method to use this class instead:
+
+public class SimpleCalc2 {
+  public static void main(String[] args) {
+    int num1, num2;
+    Scanner scan = new Scanner(System.in);
+    num1 = scan.nextInt();
+    num2 = scan.nextInt();
+    System.out.printf("%d", new Calculator().add(num1, num2));
+  }
+}
+This seems strictly worse than before, since we have more code than before, and it doesn’t do anything new. However, now that we can instantiate a Calculator separately from the main method, we can write tests for it:
+
+public class TestCalc2 {
+  @Test
+  public void testAdd() {
+    assertEquals(7, new Calculator().add(3, 4));
+    assertEquals(12, new Calculator().add(-5, 17));
+  }
+}
+We now have automated confirmation that our arithmetic is being performed correctly — without needing to involve a user in the testing process. This is important, because users aren’t reliable, and don’t always reproduce the same behavior each time they use a program.
+3 Version 3: A very simple controller
+If extracting a bit of code out of the main method made it easier to test, then perhaps we should keep trying to extract more code out of it. Let’s extract basically all the remaining code into a separate interface and class:
+
+interface CalcController {
+  // Ignore the `throws` clause for now...
+  void go(SimpleCalc calc) throws IOException;
+}
+
+class CalcController3 implements CalcController {
+  public void go(Calculator calc) {
+    Objects.requireNonNull(calc);
+    int num1, num2;
+    Scanner scan = new Scanner(System.in);
+    num1 = scan.nextInt();
+    num2 = scan.nextInt();
+    System.out.printf("%d", calc.add(num1, num2));
+  }
+}
+and rewrite main once again to use it:
+public class SimpleCalc3 {
+  public static void main(String[] args) {
+    new CalcController3().go(new Calculator());
+  }
+}
+Now our main method is about as bare-bones as it gets. And again, we’ve added more code without adding any new functionality. But, now that we can instantiate the controller, we can call its go method from test cases as well as from main.
+
+Except...as currently written, what good would that do? The go method is still hard-coded to use System.in and System.out for its inputs and outputs, so we still can’t test them. Once again, let’s abstract away details. Instead of hard-coding those two values, let’s make them be fields of the controller. According to the documentation, System.in has type InputStream, and System.out has type PrintStream. So let’s try the following:
+
+class CalcController4 implements CalcController {
+  private final InputStream in;
+  private final PrintStream out;
+  CalcController4(InputStream in, PrintStream out) {
+    this.in = in;
+    this.out = out;
+  }
+  public void go(Calculator calc) {
+    Objects.requireNonNull(calc);
+    int num1, num2;
+    Scanner scan = new Scanner(this.in);
+    num1 = scan.nextInt();
+    num2 = scan.nextInt();
+    this.out.printf("%d", calc.add(num1, num2));
+  }
+}
+and rewrite main to use it:
+
+public class SimpleCalc4 {
+  public static void main(String[] args) {
+    new CalcController4(System.in, System.out).go(new Calculator());
+  }
+}
+Now, we have the ability to instantiate a controller using some other input and output streams, and we can test the controller itself.
+
+4 Version 4: Mocks, part 1—imitation objects for testing
+Because we’re writing our code in terms of interfaces rather than concrete classes, we have the luxury of swapping in any convenient implementation of those interfaces for testing purposes.
+
+The imagery of input and output streams is meant to evoke real rivers of water, which flow in only one direction. If you’re at the downstream end of a river, with water flowing towards you, that’s the analogue of an input stream. If you’re at the upstream end, such that you can pour something into the river, that’s the analogue of an output stream. Our controller needs both an input and an output: we’re going to need to create two streams. Moreover, our test will need to write into the stream that the controller will read from, and our test will need to read from the stream that the controller writes into.
+
+To construct an InputStream for our controller to read from, we’re going to construct a String containing the inputs we want to pass into the controller. We’ll convert that string into an array of bytes, and then construct an input stream that reads from that byte array:
+InputStream in = new ByteArrayInputStream("3 4".getBytes());
+To construct a PrintStream for our controller to use, we’ll need to create a byte array that we can eventually read from, and wrap a PrintStream around it:
+ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+PrintStream out = new PrintStream(bytes);
+The PrintStream will mutate the bytes stream, and eventually we can get the bytes out of it and turn them back into a string:
+
+new String(bytes.toByteArray())
+Putting this together, we arrive at our first test for our controller:
+
+public class TestController4 {
+  @Test
+  public void testGo() throws Exception {
+    InputStream in = new ByteArrayInputStream("3 4".getBytes());
+    ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+    PrintStream out = new PrintStream(bytes);
+    CalcController controller4 = new Controller4(in, out);
+    controller4.go(new Calculator());
+    assertEquals("7", new String(bytes.toByteArray()));
+  }
+}
+There’s an awful lot of boilerplate in there: all this messing around with byte arrays seems needlessly indirect. And it is. The problem is our types are too specific: we’ve picked the wrong interfaces for in and out.
+
+5 Version 5: Fixing the types
+We don’t really need the full power of streams for our purposes here. We just need to be able to read from the input, and append to the output. (Streams cover a much wider range of functionality, including reading and writing to files, to the network, and to many other targets.) Fortunately, Java includes two more general interfaces for this: Readable and Appendable. Because they’re more general, they’re harder to use—if we were using them directly! But we’re not: we’re using a Scanner to make reading easier. A Scanner can be built using an InputStream, as we’ve been doing, or it can be built using just a Readable. And we don’t need the full power of a PrintStream, we just need to be able to print out strings, since we can use String.format to produce whatever strings we need.
+
+class CalcController5 implements CalcController {
+  final Readable in;
+  final Appendable out;
+  CalcController5(Readable in, Appendable out) {
+    this.in = in;
+    this.out = out;
+  }
+  public void go(Calculator calc) throws IOException {
+    Objects.requireNonNull(calc);
+    int num1, num2;
+    Scanner scan = new Scanner(this.in);
+    num1 = scan.nextInt();
+    num2 = scan.nextInt();
+    this.out.append(String.format("%d\n", calc.add(num1, num2)));
+  }
+}
+Note that this version of go claims that it throws IOException. Because Appendables are more general, they might include things that might fail to write properly. It so happens that using a PrintStream directly will not claim to throw exceptions, but because we’re now using the more general interface, we have to be aware of the possibility. Our main method will have to handle the possible exception:
+
+public class SimpleCalc5 {
+  public static void main(String[] args) {
+    try {
+      new CalcController5(new InputStreamReader(System.in), System.out).go(new Calculator());
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+  }
+}
+Now that we’ve generalized our types, our tests get a lot easier. In particular, it’s easy to turn a string into a Readable, and a standard StringBuilder is Appendable1:
+
+public class TestController5 {
+  @Test
+  public void testGo() throws IOException {
+    StringBuilder out = new StringBuilder();
+    Reader in = new StringReader("3 4");
+    CalcController controller5 = new Controller5(in, out);
+    controller5.go(new Calculator());
+    assertEquals("7\n", out.toString());
+  }
+}
+Much cleaner!
+
+6 Mocks, part 2—imitating models
+Our test above is enough to confirm that a user can input some numbers, and get back an answer. But it does not quite confirm that the controller is passing the inputs through correctly. For instance, the following controller will produce the "right" answer, but for the wrong reasons:
+
+public class BadController implements CalcController {
+  ...
+  public void go(Calculator calc) throws IOException {
+    Objects.requireNonNull(calc);
+    int num1, num2;
+    Scanner scan = new Scanner(this.in);
+    num1 = scan.nextInt() + 10;
+    num2 = scan.nextInt() - 10;
+    this.out.append(String.format("%d\n", calc.add(num2, num1)));
+  }
+}
+As our tests are currently written, we have no way of distinguishing this bizarre controller from a better one. This particular scenario is admittedly contrived, but it’s easy to see scenarios where errors could arise: swapping inputs because we confused row coordinates with column coordinates, or forgetting whether our indices were zero-based or one-based, etc. So how could we fix this?
+
+Remember that our model is an interface too! So we can mock up an alternate definition for it. Since our goal for this mock is solely to ensure that the arguments are being passed in correctly, we might not care about the actual result of our method. Here is an intriguing possibility:
+
+public class ConfirmInputsCalculator implements Calculator {
+  final StringBuilder log;
+  public ConfirmInputsCalculator(StringBuilder log) {
+    this.log = Objects.requireNonNull(log);
+  }
+  public int add(int num1, int num2) {
+    log.append(String.format("num1 = %d, num2 = %d\n", num1, num2));
+    return 0; // WE DON'T CARE ABOUT THIS ANSWER
+  }
+}
+
+// in our tests class:
+@Test
+public void testInputs() throws IOException {
+  Reader in = new StringReader("3 4");
+  StringBuilder dontCareOutput = new StringBuilder();
+  CalcController controller5 = new Controller5(in, dontCareOutput);
+
+  StringBuilder log = new StringBuilder();
+  Calculator calc = new ConfirmInputsCalculator(log);
+
+  controller5.go(calc);
+  assertEquals("num1 = 3, num2 = 4\n", log.toString());
+}
+Note carefully what this test does and does not do: it does not check that the output of the model is correct! It only checks that the model has received inputs that we expect from the controller. And yet this test will distinguish the BadController implementation from the others. We’ve now resolved the dangling testing problem alluded to all the way at the start of these notes.
+
+Mocks aren’t just useful for simulating inputs and outputs – they’re great for simulating any part of the system that isn’t the focus of a particular test. Our prior tests basically checked everything between user input and user output as a single "black box". But our controller really has two directions of inputs and outputs: it talks to the user through in and out, and it also talks to the model.
+
+7 An elegant idiom for testing synchronous controllers
+The behaviors of a synchronous controller follow a script: prompt the user, wait for a response, prompt again. Testing these interactions would be quite tedious if we had to build up the expected input and output strings all in one step: how do we remember whether this output belongs with that prompt, or not? To streamline this, we’ll use several features of Java—function objects, variadic functions, mock input and output objects—and and build up a much cleaner way to write these tests.
+
+7.1 Interactions
+First, let’s define a new interface:
+
+/**
+ * An interaction with the user consists of some input to send the program
+ * and some output to expect.  We represent it as an object that takes in two
+ * StringBuilders and produces the intended effects on them
+ */
+interface Interaction {
+  void apply(StringBuilder in, StringBuilder out);
+}
+This interface defines the signature of a function object, whose reason for being is to represent user/program interactions.
+We can define classes for the two most common interactions: printing text to the user, or responses from the user. We show this code two different ways: first as standard Java classes, and then again using Java’s new lambda syntax (see Streamlining the code further below).
+
+/**
+ * Represents the printing of a sequence of lines to output
+ */
+class PrintInteraction implements Interaction {
+  String[] lines;
+  PrintInteraction(String... lines) {
+    this.lines = lines;
+  }
+  public void apply(StringBuilder in, StringBuilder out) {
+    for (String line : lines) {
+      out.append(line).append("\n");
+    }
+  }
+}
+/**
+ * Represents a user providing the program with  an input
+ */
+class InputInteraction implements Interaction {
+  String input;
+  InputInteraction(String input) {
+    this.input = input;
+  }
+  public void apply(StringBuilder in, StringBuilder out) {
+    in.append(input);
+  }
+}
+For example, the following array of Interactions represents two inputs to our Calculator and their corresponding outputs:
+
+Interaction[] interactions = new Interaction[] {
+  new InputInteraction("+ 3 4\n"),
+  new PrintInteraction("7"),
+  new InputInteraction("+ 5 7\n"),
+  new PrintInteraction("12"),
+  new InputInteraction("q\n")
+};
+But how can we use them?
+
+7.2 Scripting our controller
+Suppose we construct two initially-empty StringBuilder objects, and we feed them to each Interaction in turn:
+
+StringBuilder sb1 = new StringBuilder();
+StringBuilder sb2 = new StringBuilder();
+for (Interaction i : interactions) {
+  i.apply(sb1, sb2);
+}
+What are the contents of sb1.toString() and sb2.toString()? They’re exactly the intended input and corresponding expected output from our program. If we then feed sb1.toString() to our controller, we can drive it with our intended inputs. If we give the controller another empty StringBuilder to use as output, we can compare its value to our expected one, and thereby test our controller:
+void testRun(Model model, Interaction... interactions) throws IOException {
+  StringBuilder fakeUserInput = new StringBuilder();
+  StringBuilder expectedOutput = new StringBuilder();
+
+  for (Interaction interaction : interactions) {
+    interaction.apply(fakeUserInput, expectedOutput);
+  }
+
+  StringReader input = new StringReader(fakeUserInput.toString());
+  StringBuilder actualOutput = new StringBuilder();
+
+  Controller controller = new Controller(model, input, actualOutput);
+  controller.run();
+
+  assertEquals(expectedOutput.toString(), actualOutput.toString());
+}
+(We pass in a model rather than a controller because we need to construct the controller in the test itself, using the given model.)
+
+This sort of schematic function is called a test harness: it is the infrastructure by which we can run a variety of structurally-related tests without having to repeat ourselves. (In general, test harnesses can be much more complex...up to, say, being able to detect and run all our tests for us, and produce an easy-to-read report of the results. In other words, JUnit.) Now we merely need to say:
+
+testRun(new Calculator(),
+  new InputInteraction("+ 3 4\n"),
+  new PrintInteraction("7"),
+  new InputInteraction("+ 5 7\n"),
+  new PrintInteraction("12"),
+  new InputInteraction("q\n"));
+But we can do better yet!
+
+7.3 Streamlining the code further
+The definitions for PrintInteraction and InputInteraction are clunky, full of boilerplate that would be nice to eliminate. In fact, we can. Java 8 has introduced lambda expressions that make it far easier to write function objects. Java still insists that all functions must reside in objects (unlike, say, Racket, where functions and structs were distinct), but Java has introduced syntactic sugar to make it easier to write them down. 2
+
+Our first refactoring is to create a static function surrounding the calls to our constructors:
+
+static Interaction prints(String... lines) {
+  return new PrintInteraction(lines);
+}
+This doesn’t save much typing; in fact, it’s now longer than our original! But our next step is to use lambda syntax, and eliminate the definition of PrintInteraction altogether:
+
+static Interaction prints(String... lines) {
+  return (input, output) -> {
+    for (String line : lines) {
+      output.append(line).append('\n');
+    }
+  };
+}
+This function has the same signature as above, which means we can call it the same way. Internally, Java sees the syntax (...) -> {...} and automatically creates a new, anonymous class that implements the Interaction interface (which it determines is needed because of our return-type annotation), whose one and only method is defined as the body of code above. In other words, this lambda above is exactly the same as our original definition, except it’s anonymous.
+We can redefine our other class, too:
+
+static Interaction inputs(String in) {
+  return (input, output) -> {
+    input.append(in);
+  };
+}
+And now we can test our controller by saying:
+
+testRun(new Calculator(),
+        inputs("+ 3 4\n"),
+        prints("7"),
+        inputs("+ 5 7\n"),
+        prints("12"),
+        inputs("q\n"));
+This is about as terse and expressive as it gets!
+
+We can define additional convenience interactions too: for example, a prompt and response:
+
+static Interaction prompts(String prompt, String response) {
+  return (input, output) -> {
+    output.append(prompt).append("\n");
+    input.append(response);
+  }
+}
+or a formatted output:
+
+static Interaction formats(String template, Object... params) {
+  return (input, output) -> {
+    output.append(String.format(template, params));
+  }
+}
+The possibilities here can extend to whatever the scenario is that you’re testing. By defining these convenience interactions, it becomes much clearer to express your intended tests as a sequence of interactions, rather than as two giant strings with no delimiters to guide the way. Moreover, changing the interactions automatically changes the inputs and outputs in tandem; it’s impossible for them to become inconsistent with each other.
+
+1If we cared about multiple threads and synchronization, we would use a StringBuffer here instead.
+
+2Syntactic sugar is new syntax that is not strictly necessary, in that you could accomplish exactly the same goal using other, more verbose syntax. But syntactic sugar is often “sweeter” to use than the alternatives.

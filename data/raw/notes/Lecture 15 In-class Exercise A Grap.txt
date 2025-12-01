@@ -1,0 +1,24 @@
+Lecture 15: In-class Exercise: A Graphical View and Controller for Tic Tac Toe
+Java source (.zip)
+1 A View and Controller for Tic Tac Toe
+The purpose of this exercise is to give you practice with implementing the View and Controller components of the Model-View-Controller design pattern, by means of a graphical user interface using Java’s Swing library.
+
+You may work freely with other students on this exercise!
+
+In the starter code, you are given an interface representing a controller for Tic Tac Toe, with one method, playGame(). You are also given an interface for a view, TTTView. Your task is to implement the two interfaces to create an interactive, graphical Tic Tac Toe game. Put your new controller and view code in the same package alongside your Tic Tac Toe model as it will depend on the model. You are also given a class Main with a main method that will allow you to test your game interactively.
+
+You will need to create one interface and four classes:
+
+a public interface ViewActions that defines the actions the view needs an observer to respond to.
+a public class that implements both TicTacToeController and ViewActions, with a single public constructor that takes one argument of type TTTView. This class will have two fields, a model (TicTacToe) and a view (TTTView).
+a public class that implements TTTView and extends JFrame. Its constructor should take in a ReadonlyTTTModel (note that the model interface has been refactored into two related interfaces). Note that TTTView and this class will both need a method to let a ViewActions observer subscribe to them.
+a class that extends JPanel and overrides paintComponent that draws the game board and game status. Status includes indicating whose turn it is, and if the game is over, who won (or if it was a tie).
+a class that extends MouseAdapter and overrides mouseClicked to capture a click on the game board and pass it to the controller.
+You will also need to fill in the parts of the main method in Main.java as noted in the comments in that method.
+
+2 Testing
+Test your view by running it, inspecting the view, clicking on the game board and playing the game. No automated tests here.
+
+3 Notes to Keep in Mind
+You will likely want to refer to the sample code on graphical programs, such as the Turtle Graphics example (see the "solution code" link).
+Submit your zip containing only your src directory to In-class Exercise 3 on the handin server by the deadline of the relevant assignment on the server. There is no self-evalulation for this exercise.

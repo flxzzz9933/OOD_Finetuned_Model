@@ -1,0 +1,293 @@
+Lecture 17: The Adapter Pattern
+SlidesJava source (.zip)Exercise (.zip)
+Objectives of the lecture
+This lecture introduces the adapter design pattern. Adapters are very commonly used to “mash-up” many existing code bases into one application. This lecture also applies this pattern to implement a variant of the MVC design.
+
+1 A tale of two interfaces
+It’s rare that real, significant programs are designed completely from scratch. Most real programs use libraries, often several. It’s also rare that all the libraries used by a program were designed to work together, using all the same abstractions. More often, libraries have to define some interfaces of their own. Sometimes, you need to integrate two libraries that define different interfaces for similar or even equivalent abstractions.
+
+For example, suppose we were using two different libraries that each offered its own set interface incompatible with the other. Suppose a library for working with graphs—call it graph—relies on a set abstraction. So it declares set operations, which in this case work with elements of sets1:
+
+/**
+ * Simple sets of integers.
+ */
+public interface IntSet1 extends Iterable<Integer> {
+  /**
+   * Adds the given value to this set.
+   */
+  void add(int value);
+
+  /**
+   * Removes the given value from this set, if present.
+   */
+  void remove(int value);
+
+  /*
+   * Determines whether a particular integer value is a member of this set.
+   */
+  boolean member(int value);
+
+  /**
+   * Returns an iterator over the elements.
+   */
+  Iterator<Integer> iterator();
+}
+The graph library provides a class IntSet1Impl that implements IntSet1 and has a default constructor:
+
+public class IntSet1Impl implements IntSet1 {
+  /** Creates a new, empty integer set. */
+  public IntSet1Impl() { ... }
+
+  ...
+}
+The other library, for probability computations (prob), declares set operations that work mostly with sets rather than elements:
+
+public interface IntSet2 {
+  /**
+   * Inserts the elements of {@code other} into this set.
+   */
+  void unionWith(IntSet2 other);
+
+  /**
+   * Removes the elements of {@code other} from this set.
+   */
+  void differenceFrom(IntSet2 other);
+
+  /**
+   * Checks whether this set is a superset of the {@code other} set.
+   */
+  boolean isSupersetOf(IntSet2 other);
+
+  /**
+   * The contents of the set as a list of integers. Modifying the returned
+   * list will have no effect on this set.
+   */
+  List<Integer> asList();
+}
+The prob library provides a class IntSet2Impl that implements IntSet2. For creating instances, IntSet2Impl provides two static factories, empty() and singleton(int):
+
+public class IntSet2Impl implements IntSet2 {
+  /** Creates a new, empty integer set. */
+  public static empty() { ... }
+
+  /** Creates a new, singleton integer set with the given member. */
+  public static singleton(int member) { ... }
+
+  ...
+}
+What if we want to use both of these libraries from the same program, and furthermore, we want to use some sets with both. Perhaps we want to use graph’s sets, which implement IntSet1, with code that works with prob’s sets, which implement IntSet2. Can we do it? Yes, with an adapter.
+
+2 The class adapter pattern
+To make this abstract for a moment, suppose we have a class AdapteeImpl and we want to reuse its implementation where an object implementing interface Target is needed. AdapteeImpl and Target don’t have exactly the same methods, but they’re close enough that we can create a class AdapteeImplToTargetAdapter that implements interface Target by subclassing AdapteeImpl and implementing Targets methods in terms of the inherited methods primarily using an instance of Adaptee to do so. In UML it looks like this:
+
+
+
+If the client wants a Target then we can use AdapteeImpl to implement it by writing AdapteeToTargetAdapter, which extends AdapteeImpl and implements Target by translating Target methods to AdapteeImpl methods. Or more concretely, some code from prob (the client) knows how to use IntSet2s, and we implement IntSet2 based on IntSet1Impl by writing an adapter that wraps an IntSet1Impl and uses it as the representation of an IntSet2.
+
+We start the adapter by extending IntSet1Impl:
+
+public class IntSet2ToIntSet1Impl
+  extends IntSet1Impl implements IntSet2 {
+}
+For the remaining methods, each is about implementing a method that takes a set in and translates it to the individual member operations that IntSet supports.
+
+@Override
+public final void unionWith(IntSet2 other) {
+  for (int i : other.asList()) {
+    add(i);
+  }
+}
+
+@Override
+public final void differenceFrom(IntSet2 other) {
+  for (int i : other.asList()) {
+    remove(i);
+  }
+}
+
+@Override
+public final boolean isSupersetOf(IntSet2 other) {
+  for (int z : other.asList()) {
+    if (! member(z)) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+@Override
+public final List<Integer> asList() {
+  List<Integer> result = new ArrayList<>();
+  for (int i : this) {
+    result.add(i);
+  }
+  return result;
+}
+The class adapter pattern is simple to use—just extend the adaptee and then implement the target. The resulting object, by virtue of extending the adaptee, inherits its interface for free. However, there are many things it cannot do, such as:
+
+wrapping an already-existing object, or
+wrapping objects of different types than the one for which it was intended.
+In order to do those things and more, we can replace inheritance with delegation and gain flexibility as well.
+
+3 The object adapter pattern
+To make this once again abstract, suppose we have an object of type Adaptee (which could be an interface or a class) and we want to use it in a context where an object implementing interface Target is needed. Adaptee and Target don’t have exactly the same methods, but they’re close enough that we can create a class AdapteeToTargetAdapter that implements interface Target primarily using an instance of Adaptee to do so. In UML it looks like this:
+
+
+
+If the client wants a Target then we can use an Adaptee in its place by writing an AdapteeToTargetAdapter, which owns an Adaptee and implements Target by translating Target methods to Adaptee methods. Or more concretely, some code from graph (the client) knows create IntSet1s, and we can use an IntSet1 as that IntSet2 by writing an adapter that wraps an IntSet1 and uses it as the representation of an IntSet2.
+
+We start the adapter by declaring that it implements IntSet1, which is what the client wants, and has a field containing an IntSet2, which is the object to adapt:
+
+public final class IntSet2ToIntSet1Adapter implements IntSet1 {
+  private final IntSet2 adaptee;
+}
+There are two ways we might want to construct an IntSet2ToIntSet1Adapter. If we have an IntSet2 object already, we can adapt that object:
+
+public IntSet2ToIntSet1Adapter(IntSet2 adaptee) {
+  this.adaptee = Objects.requireNonNull(adaptee);
+}
+Whereas sometimes we might not have an IntSet2 already and not need access to it directly, so we provide a convenience constructor that creates the adaptee for us:
+
+public IntSet2ToIntSet1Adapter() {
+  this(IntSet2Impl.empty());
+}
+Next we need to implement the methods of IntSet1 interface in terms of IntSet2 by translating method calls to the adaptee. For example, to add an int to the set, we use adaptee’s unionWith method, passing it a singleton IntSet2 containing the int value:
+
+@Override
+public void add(int value) {
+  adaptee.unionWith(IntSet2Impl.singleton(value));
+}
+The remove and member methods are equally straightforward:
+
+@Override
+public void remove(int value) {
+  adaptee.differenceFrom(IntSet2Impl.singleton(value));
+}
+
+@Override
+public boolean member(int value) {
+  return adaptee.isSupersetOf(IntSet2Impl.singleton(value));
+}
+Finally, to implement the iterator method, we ask the adaptee for its elements in a list, since IntSet2 supports that, and then return an iterator over the list:
+
+@Override
+public Iterator<Integer> iterator() {
+  return adaptee.asList().iterator();
+}
+3.1 A two-way adapter
+Our IntSet2ToIntSet1Adapter adapter lets us use an IntSet2 from prob as an IntSet1 that we can pass to graph. But what if we’d like to use the resulting object with both libraries, with no further adaptation? A two-way adapter implements two interfaces, most often being a Target as well as an Adaptee, sending requests received via either interface to the underlying adaptee object. For example, we can declare our IntSet2ToIntSet1Adapter to implement both interfaces:
+
+public final class IntSet2ToIntSet1Adapter implements IntSet1, IntSet2 { ... }
+the implementation from the previous section remains, and to implement IntSet2 as well, we merely need to forward those requests to the IntSet2 adaptee:
+
+@Override
+public void unionWith(IntSet2 other) {
+  adaptee.unionWith(other);
+}
+
+@Override
+public void differenceFrom(IntSet2 other) {
+  adaptee.differenceFrom(other);
+}
+
+@Override
+public boolean isSupersetOf(IntSet2 other) {
+  return adaptee.isSupersetOf(other);
+}
+
+@Override
+public List<Integer> asList() {
+  return adaptee.asList();
+}
+4 The ViewModel
+
+
+In the Model-View-Controller architecture, the view must render the data that is maintained by the model. In such circumstances, how will the data from the model make it to the view?
+
+
+
+One way would be for the controller to act as an intermediary for this data exchange. The controller would get the data from the model, and then supply it to the view. In this design, the view does not “ask” for the data–the controller provides it at the appropriate time and tells the view to use it. This can be termed as a “push” design: the controller pushes the data to the view. One drawback of this design is that the controller must repeatedly pass (possibly a lot of) data from the model to the view. This can be made more efficient if the view could “pull” the data out whenever it needed.
+
+The “pull” design can be as simple as having the view store a reference to the model. This design has an even bigger potential pitfall. The model interface likely offers operations that access data, and others that mutate it. By giving the view a reference to the model, we give the view the power to mutate the model directly. Such direct mutation is undesirable for several reasons: a view can circumvent checks that are implemented in the controller, a view can make changes that conflict with the workings of another view, etc. If only there was a way for the view to provide restricted access to the model: it can access, but it may not mutate.
+
+We can achieve this by creating a ViewModel class that implements a IViewModel interface. A ViewModel object would then extract data from the original model object and provide it to its client, essentially avoiding direct contact between the client and the model.
+
+
+
+A possible design would be for the IViewModel interface to contain methods that only get the data. The ViewModel class would use the actual model object to provide the data. Since the data resides in a specific, pre-existing model object, the ViewModel class is essentially an object adapter that adapts the model with the viewmodel interface.
+
+
+
+Another design could be for the IViewModel interface to be the same as the model interface. In this case the ViewModel class would implement all the model’s methods, but suppress any mutating operations (for example, by throwing UnsupportedOperationException).
+
+
+
+A third design would select elements of these two designs. We create the IViewModel interface to have only accessor methods, and make our model implement both the model interface and the IViewModel interface. When we provide the model interface to the view, we provide it as a IViewModel interface. This means that the model is available to the view with a restricted IViewModel interface.
+
+5 Case study: Enumerator and Iterator, and partial adaptors
+Sometimes, adaptating one interface (or class) to another interface doesn’t work quite so smoothly.
+
+In the very first version of Java, the standard library included the following interface2:
+
+interface Enumeration<T> {
+  boolean hasMoreElements();
+  T nextElement();
+}
+This interface was used to describe enumerating the various items in a collection. For various reasons, this interface was deprecated in favor of the following, more familiar interface:
+
+interface Iterator<T> {
+  boolean hasNext();
+  T next();
+  void remove();
+}
+Suppose your project has to work with some ancient Java library, that includes a class that implements Enumerator, and you’d like to use it with modern Iterators. Which kind of adapter – object or class – would you most likely need to use?
+
+Since this Enumerator-implementing class already exists, and we can’t modify it, we’ll define an object adapter to wrap the instances of that class and make them behave like an Iterator.
+
+Getting started is easy enough:
+
+class EnumeratorIterator<T> implements Iterator<T> {
+  Enumerator<T> source;
+  EnumeratorIterator(Enumerator<T> source) {
+    this.source = Objects.requireNonNull(source);
+  }
+
+  @Override
+  public boolean hasNext() { return this.source.hasMoreElements(); }
+
+  @Override
+  public boolean next() { return this.source.nextElement(); }
+
+  @Override
+  public void remove() { /* ??? */ }
+}
+There is no method in Enumerator that corresponds to remove. We might think that we could implement remove by somehow collecting all the remaining elements of the source, removing the current one, and continuing to enumerate the resulting rest of the collected elements. But...recall the original motivating purpose of iterators, which is to describe an arbitrary collection of items, supplying them one at a time. There is no guarantee that the collection is finite, which means that our idea breaks down right at the start: “collect the remaining elements” is an ill-defined notion!
+
+So we can’t actually implement this method. Yet the Iterator interface requires that we define something there. The best we can do is throw an exception, saying we give up:
+
+@Override
+public void remove() {
+  throw new UnsupportedOperationException("Can't remove from this Enumeration");
+}
+Fortunately, the designers of the Iterator interface realized that not all iterators have a well-defined notion of removing items — consider what it might mean to iterate over all positive integers, say, and try to remove one of them. Accordingly, the documentation for this method specifies that the UnsupportedOperationException may be used to indicate exactly this failure mode.3
+
+5.1 Over-promising and under-delivering
+This is a tiny but indicative example of what might go wrong when adapting one type to another: sometimes, not everything is readily adaptable. But recall the underlying contract of interfaces: they are promises of behavior that clients of the interface should be able to rely upon in their code. Providing an object that claims to implement an interface, but in fact throws exceptions for some (or all) of the methods, is a rather stubborn and unhelpful object!
+
+There are other settings, though, where refusing to implement behavior is a perfectly reasonable thing to do:
+
+Consider an Insta-snap-book app clone, that connects your phone and its camera to your social-media accounts via the phone’s internet connection. The camera API provides a neatly-packaged abstraction for taking pictures. But suppose your app obtains a valid (i.e. non-null) CameraManager object, and before the app can take a picture, you go to the permissions manager and disable its ability to access the camera. What should the API do?
+Consider course-management software, that maintains student homeworks and grades and other pertinent information. The application maintains multiple roles — student, grader, professor, etc — and all users are represented in the system as a User object, with a role field. How should the User object respond to a getGrades request if your role is insufficiently-priviledged?
+Consider a library for reading and writing image files. How should an image object respond to a getPixels request if the image file is corrupted?
+Part of the challenge as an interface designer is figuring out their potential failure modes, and documenting them as part of the possible behaviors of that interface. In the Iterator case, if the remove method were not specified as potentially throwing an exception, then it would be impossible to provide a EnumeratorIterator adapter that fulfilled the Iterator interface’s promises. If the camera API didn’t document its permission errors, then the camera API would itself be at fault.
+
+And, as a counterpart: the challenge of being an interface client is, if your program can’t obey the promises of that interface, then it behooves you to document why your code is not compliant, so that future maintainers of your code can figure out what might go wrong!
+
+Indeed, this design tension raises a broader language-design concern, that touches directly on how to use this pattern specifically (or indeed, our programming language more generally) effectively. There’s something deeply unpleasant about having an interface claim to promise that a method exists, and yet have an implementation of it that fails at runtime. After all, part of the touted benefits of a statically-typed language is that “if it typechecks, then all the operations should be legal at runtime”, since the type system ensures that no non-sensical methods can be invoked. This is the sort of invariant that we dismissed as vacuous in Lecture 12, since it was true by virtue of the language, rather than by our own reasoning efforts. Supplying methods that then throw errors weakens the effectiveness of our static type-based reasoning, though it doesn’t eliminate it entirely. Instead, if we want to ensure that our program never crashes with an unhandled exception, we must resort to higher-level invariant reasoning — those logical assertions we talked about in Lecture 12 that the compiler can’t help us with! — and think about the dynamic behavior of our program, as well.
+
+1We limit these to sets of int to avoid the additional complexity of generics.
+
+2Actually, the original version was defined without generics (since those were added in Java 1.5). Fortunately, this change does not affect our design problems here in any way.
+
+3As of version 8, Java supports a notion of default methods in an interface. Classes that implement these interfaces can basically skip implementing such methods, because the interface provides a default implementation. (This gets somewhat tricky when a class implements two interfaces, both of which provide a default method with the same name and the same signature – in such cases, the class is required to override the method explicitly, to resolve the ambiguity.) The default implementation for the remove() method in the Iterator interface simply throws exactly this exception...so you don’t even have to mention it in your code unless you truly want to support this method.

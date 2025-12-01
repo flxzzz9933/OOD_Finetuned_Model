@@ -1,0 +1,194 @@
+{
+  "metadata": {
+    "type": "essay",
+    "count": 10,
+    "difficulty": "challenging",
+    "description": "Open-ended questions requiring deep understanding and synthesis of OOD concepts",
+    "topics_covered": ["adapter", "observer", "mvc", "decorator", "strategy", "command", "inheritance", "composition"],
+    "grading_rubric": {
+      "conceptual_accuracy": "40% - Correct understanding and application of OOD principles",
+      "completeness": "25% - Addresses all aspects of the question",
+      "examples_and_code": "20% - Provides relevant examples or code snippets",
+      "clarity": "15% - Clear, well-organized explanation"
+    }
+  },
+  "questions": [
+    {
+      "id": "essay_001",
+      "topic": "inheritance_vs_composition",
+      "question": "The 'fragile base class problem' is a well-known issue with inheritance-based code reuse. Using the example of an InstrumentedIntSet that tracks how many times elements are added to a set, explain: (a) How the fragile base class problem manifests when InstrumentedIntSet extends a base IntSet class, (b) Why the problem occurs specifically when the base class's addAll() method internally calls add(), (c) How using composition (delegation) instead of inheritance solves this problem, and (d) What trade-offs exist between the inheritance and composition approaches.",
+      "expected_topics": [
+        "Self-use pattern in base class causing double-counting",
+        "Subclass overriding both add() and addAll() leads to counter being incremented twice per element",
+        "Dependence on undocumented implementation details",
+        "Composition wraps delegate, only counts in wrapper's methods",
+        "Composition immune to base class implementation changes",
+        "Trade-off: composition requires more boilerplate (forwarding methods)",
+        "Trade-off: inheritance gives access to protected members"
+      ],
+      "min_length": 400,
+      "max_length": 800
+    },
+    {
+      "id": "essay_002",
+      "topic": "adapter_pattern",
+      "question": "Compare and contrast object adapters versus class adapters in the context of the Adapter design pattern. Your answer should address: (a) The structural differences between the two approaches (inheritance vs. composition), (b) When you would choose one over the other, with specific scenarios, (c) Java's language constraints that affect this choice, and (d) How a two-way adapter that implements multiple interfaces fits into this comparison.",
+      "expected_topics": [
+        "Class adapter uses inheritance (extends adaptee)",
+        "Object adapter uses composition (wraps adaptee instance)",
+        "Java single inheritance limits class adapters",
+        "Object adapter can wrap final classes",
+        "Object adapter more flexible - can adapt multiple instances",
+        "Class adapter can override adaptee methods",
+        "Two-way adapter typically object-based, implements multiple interfaces",
+        "Object adapter preferred when adaptee is final or unknown at compile time"
+      ],
+      "min_length": 400,
+      "max_length": 800
+    },
+    {
+      "id": "essay_003",
+      "topic": "mvc_architecture",
+      "question": "Explain how the Model-View-Controller (MVC) architecture achieves separation of concerns in a TicTacToe application. Your answer should cover: (a) The specific responsibilities of each component, (b) How the components communicate (who knows about whom), (c) How this separation facilitates testing (with specific examples of how you would test each component), and (d) How the Observer pattern relates to MVC in updating the View when the Model changes.",
+      "expected_topics": [
+        "Model: game state, rules, win detection - no UI knowledge",
+        "View: display, user input capture - no game logic",
+        "Controller: mediates, translates input to model calls",
+        "Model doesn't know View; View observes Model",
+        "Controller knows both Model and View",
+        "Test Model with unit tests (no UI needed)",
+        "Test Controller with mock Model and mock View/StringReader",
+        "Test View manually or with UI testing frameworks",
+        "Observer pattern: View registers with Model, updates on notify"
+      ],
+      "min_length": 400,
+      "max_length": 800
+    },
+    {
+      "id": "essay_004",
+      "topic": "decorator_pattern",
+      "question": "The Decorator pattern is used extensively in Java's I/O library and Swing GUI framework. Explain: (a) The core structure of the Decorator pattern and how it differs from simple inheritance, (b) How Swing components like JScrollPane, JBorderPane demonstrate this pattern, (c) The benefits of this approach for composing functionality, and (d) Potential drawbacks or situations where Decorator might not be the best choice.",
+      "expected_topics": [
+        "Decorator implements same interface as component",
+        "Decorator holds reference to wrapped component",
+        "Decorator delegates to component then adds behavior",
+        "Unlike inheritance: dynamic composition, any implementation can be wrapped",
+        "JScrollPane wraps any JComponent, adds scrollbars",
+        "Multiple decorators can be nested in any order",
+        "Benefits: single responsibility, open-closed principle, flexible composition",
+        "Drawbacks: many small objects, complex debugging, type checking issues"
+      ],
+      "min_length": 400,
+      "max_length": 800
+    },
+    {
+      "id": "essay_005",
+      "topic": "strategy_pattern",
+      "question": "Design and explain a Strategy pattern implementation for a TicTacToe AI system that can use different move-selection algorithms. Your answer should include: (a) The interface design for the strategy, (b) At least three different concrete strategy implementations (describe their algorithms), (c) How the strategies would be used by the game controller, and (d) How Java 8+ features (lambdas, functional interfaces) can simplify strategy implementation.",
+      "expected_topics": [
+        "Interface: Coord chooseMove(TicTacToeModel model, Piece forWhom)",
+        "RandomStrategy: pick random empty cell",
+        "CornerStrategy: prioritize corners, then center, then edges",
+        "MinimaxStrategy: optimal play using game tree search",
+        "BlockingStrategy: block opponent's winning moves",
+        "Controller holds strategy reference, calls chooseMove",
+        "Strategy can be swapped at runtime",
+        "Single-method interface is functional interface",
+        "Lambda: (model, piece) -> computeMove(model, piece)"
+      ],
+      "min_length": 400,
+      "max_length": 800
+    },
+    {
+      "id": "essay_006",
+      "topic": "command_pattern",
+      "question": "Explain how the Command pattern enables undo/redo functionality in a turtle graphics application. Your answer should address: (a) The structure of a Command interface and concrete command classes, (b) How commands store state necessary for undoing, (c) The role of a CommandHistory/invoker in managing executed commands, (d) How macro commands (composite commands) can be implemented, and (e) The relationship between Command pattern and the Memento pattern for state management.",
+      "expected_topics": [
+        "Command interface: execute(), undo(), possibly canUndo()",
+        "MoveCommand, TurnCommand as concrete implementations",
+        "Commands store pre-execution state (previous position/heading)",
+        "CommandHistory maintains undo and redo stacks",
+        "Execute pushes to undo stack, clears redo stack",
+        "Undo pops from undo, calls undo(), pushes to redo",
+        "MacroCommand holds list of commands, executes all, undoes in reverse",
+        "Memento: save/restore complete state snapshots vs Command's operation history"
+      ],
+      "min_length": 400,
+      "max_length": 800
+    },
+    {
+      "id": "essay_007",
+      "topic": "testing_design",
+      "question": "Dependency injection is a technique that greatly improves testability. Using the example of a TicTacToeConsoleController that accepts Readable and Appendable parameters, explain: (a) What dependency injection is and how this example demonstrates it, (b) How this design enables automated testing without actual console I/O, (c) What mock objects are and how they would be used to test the controller, (d) The difference between testing with mocks versus testing with real implementations, and (e) How the @Before, @Test, and assertThrows annotations/methods support this testing approach.",
+      "expected_topics": [
+        "DI: pass dependencies in rather than creating them internally",
+        "Constructor injection with Readable/Appendable interfaces",
+        "Tests use StringReader with predetermined input",
+        "Tests use StringBuilder to capture output",
+        "Mocks simulate behavior, record interactions for verification",
+        "Mocks allow testing specific scenarios (errors, edge cases)",
+        "Real implementations test integration, mocks test units in isolation",
+        "@Before sets up fresh fixtures before each test",
+        "@Test marks test methods",
+        "assertThrows verifies expected exceptions"
+      ],
+      "min_length": 400,
+      "max_length": 800
+    },
+    {
+      "id": "essay_008",
+      "topic": "observer_pattern",
+      "question": "The Observer pattern is fundamental to MVC and GUI programming. Explain: (a) The structure of the Observer pattern with Subject and Observer roles, (b) How it enables loose coupling between components, (c) Potential problems like infinite recursion and how to prevent them, (d) The relationship between Observer pattern and Java's event listeners in Swing, and (e) Push versus pull models for observer notification.",
+      "expected_topics": [
+        "Subject maintains list of observers, has attach/detach/notify",
+        "Observer has update() method called on notification",
+        "Loose coupling: subject doesn't know concrete observer types",
+        "Subjects and observers can vary independently",
+        "Infinite recursion: observer modifies subject during update, triggering re-notification",
+        "Prevention: notification flags, deferred updates, careful design",
+        "Swing: ActionListener, MouseListener are observer interfaces",
+        "Component (Subject) fires events to registered listeners",
+        "Push: notify includes changed data; Pull: observer queries subject"
+      ],
+      "min_length": 400,
+      "max_length": 800
+    },
+    {
+      "id": "essay_009",
+      "topic": "design_for_inheritance",
+      "question": "Josh Bloch's Effective Java advises to 'design and document for inheritance or else prohibit it.' Explain: (a) What it means to design a class for inheritance, (b) What documentation is necessary for safe subclassing, (c) The risks of allowing inheritance without proper design, (d) How making a class or methods final prohibits inheritance, and (e) When inheritance is appropriate versus when composition should be preferred.",
+      "expected_topics": [
+        "Design for inheritance: decide which methods can be overridden",
+        "Document self-use: which methods call which internally",
+        "Document effects of overriding on other methods",
+        "Use private helpers for implementation shared between public methods",
+        "Risks: fragile base class, broken invariants, unexpected behavior",
+        "Final class cannot be extended; final methods cannot be overridden",
+        "Inheritance for is-a relationships with well-defined extension points",
+        "Composition for has-a, when flexibility needed, when base class not designed for extension",
+        "Prefer composition when in doubt"
+      ],
+      "min_length": 400,
+      "max_length": 800
+    },
+    {
+      "id": "essay_010",
+      "topic": "integration",
+      "question": "You are designing a graphical drawing application that supports multiple shape types, undo/redo, and multiple rendering backends (screen, printer, SVG export). Explain which design patterns you would use and how they would work together. Address: (a) How the Strategy pattern could handle different rendering backends, (b) How the Command pattern would enable undo/redo for drawing operations, (c) How the Decorator pattern might add features like borders or shadows to shapes, (d) How MVC would structure the overall application, and (e) Any other patterns that might be useful and why.",
+      "expected_topics": [
+        "Strategy: RenderStrategy interface with ScreenRenderer, PrintRenderer, SVGRenderer",
+        "Each strategy implements render(Shape) differently",
+        "Command: DrawCommand, DeleteCommand, MoveCommand with execute/undo",
+        "CommandHistory manages undo/redo stacks",
+        "Decorator: BorderDecorator, ShadowDecorator wrap shapes, add visual effects",
+        "Decorators delegate to wrapped shape then add their effect",
+        "Model: document state, shape collection",
+        "View: renders model using current RenderStrategy",
+        "Controller: handles user input, creates commands, executes them",
+        "Additional: Factory for creating shapes, Composite for shape groups"
+      ],
+      "min_length": 500,
+      "max_length": 1000
+    }
+  ]
+}

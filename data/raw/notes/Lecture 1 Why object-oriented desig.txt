@@ -1,0 +1,62 @@
+Lecture 1: Why object-oriented design?
+Slides
+Lecture Objectives
+Describe some reasons why writing and maintaining software programs is complicated
+Describe of some basic high-level concepts in object-oriented design, and their role in software development
+Define and describe the SOLID principles
+Differentiate between correct programs and “good” programs
+1 Software isn’t easy
+Writing software is hard. Writing good software is really hard. This might surprise us, because how computers compute is, fundamentally, very simple. As programmers, we have a solid understanding of the rules that a machine follows to execute our programs, and yet, experience shows that all significant programs have bugs—that is, they behave in ways that are unexpected and undesirable. How can that be?
+
+We compose complex systems from simple parts.
+
+The physical world limits the size of artifacts that we can construct, but computer programs know no such limits.1 Programs are mathematical creatures, their scale and scope limited only by our imaginations. While the individual rules of computation are simple and easy to grasp, as programs get larger, simple steps interact in increasingly unpredictable ways. Human beings are capable of producing much larger programs than they are capable of understanding, and large and changing teams of human beings moreso. Thus, much of the task of engineering good software comes down to reducing and managing complexity.
+
+Of course, complexity is not the only challenge in writing software; another is that requirements evolve throughout the software development lifecycle. It’s rare that a customer can, at the outset of a project, describe accurately what is wanted, and even then, releasing version one doesn’t mean that we’re finished. Requirements often change because the world our programs must interact with changes. We invent new hardware, change our laws, specify new protocols, and dream up novel features, and we need software to keep up. We want designs to be flexible, so that we can adapt them to changing requirements without making major alterations to our code.
+
+2 Object-oriented design: Basic concepts
+In this course, we focus on a suite of techniques and technologies for dealing with complexity and increasing flexibility that are commonly known as object oriented. We will discuss concepts such as
+
+information hiding, the idea that components should not know about other components’ data representations;
+interfaces, which mediate between client and provider, and allows each to be replaced or changed independently; and
+polymorphism, by which the same code works on different classes of objects.
+Each of these concepts promotes loose coupling, in which different parts of a program depend as little as possible on the details of other parts. This makes components easier to replace or reuse, and by limiting the ways in which components can interact, loose coupling may help reduce the complexity of the system as a whole. (Similarly, functional programming limits interactions by making all communication between components explicit and local.)
+
+3 SOLID principles
+A lot of wisdom learned through years of software development is succinctly represented by the SOLID principles. These principles give a high-level guidance of some desirable characteristics of well-designed software.
+
+Single responsibility, meaning that each class should have a single purpose or job to do. If a single class is doing multiple tasks, perhaps it’s best to split that class into several smaller ones. (For example, separating the logic of a GUI from the presentation makes it easier to test and easier to change each separately.)
+Open/closed, meaning that interfaces should be open to reimplementation, and that clients should not require (and possibly not even permit!) modification. (For example, code written to use the Map interface does not have to change when we decide we’d rather use a TreeMap instead of a HashMap.)
+Liskov substitution2, meaning that objects of subtypes may be used anywhere that the supertype can be used. (For example, if a Square is a Rectangle then a Square can be used wherever a Rectangle can be used.)
+Interface segregation, meaning that classes should offer small, specialized interfaces for different kinds of clients. (For example, a class representing the state of a document might implement different interfaces for spell-checking and printing that provide only the necessary operations for each task; this makes the relationships clearer and dependencies narrower.)
+Dependency inversion, meaning that details should depend on abstractions rather than abstractions depending on details. This reduces coupling between two entities, which makes maintaining and replacing them easier. (For example, the GUI of an application should only know about the interface of the business logic, rather than requiring an instance of a concrete implementation of the business logic interface.)
+4 Good software
+Now, if we want to write good software, it is important to say what makes software “good.” Paramount is correctness, which means that a program does what we intend it to do. We also care about efficiency, because a program that takes longer to run than we have time to wait, or needs more memory than we can afford, isn’t very useful. Often the goals of correctness and efficiency are said to be at odds: While abstraction might help us write programs that are (more) correct, it can also impede efficiency. We will see that this is sometimes the case, but we will also explore how carefully designed abstractions can facilitate efficiency.
+
+Because we have to balance these competing concerns, making software requires making choices. The most interesting problems in software development have no clear answers. This is what we mean when we talk about design. Our sense of what makes code good is as much aesthetic as it is formal or mathematical. Despite the absence of clear metrics, with experience we develop intuition that distinguishes better designs from worse. One goal of this course is for you to gain a little more experience and grow a little more intuition.
+
+The great computer architect Fred Brooks wrote that there is “no silver bullet”: "There is no single development, in either technology or management technique, which by itself promises even one order-of-magnitude improvement within a decade in productivity, in reliability, in simplicity."
+
+Certainly this is true, but object-oriented design makes a decent wooden stake.3 It offers a viable and popular methodology for mitigating complexity and change, if we do it well. If we do it poorly, we can make a terrible, incomprehensible mess. We will do our best to help you do it well, but we hope in this semester you will have the opportunity to experience both.
+
+It is important to note that lessons in design, similar to lessons in programming, are learned often through making mistakes. You should be ready for this: often you will discover design limitations only by trying them out. While you should always strive to come up with the best design before you implement it, be aware that it in the nature of design to evolve. No design is perfect for all situations, which means one can always pinpoint limitations in any design. The design process is about recognizing what you want, and then coming up with a design that satisfies your current and estimated future requirements, not every eventuality.
+
+5 Topics
+Some topics we will cover in this course:
+
+What are objects all about?
+Interface polymorphism
+Data abstraction and encapsulation
+Client perspective versus implementor perspective
+Object-oriented terminology
+Generic polymorphism
+Testing and specification
+Algorithmic efficiency
+Software archaeology
+Class diagrams
+Design patterns
+1This is not strictly true, as storage is finite, but in practice memory on general-purpose computers is not a constraint on program size.
+
+2Named after Barbara Liskov, a Turing award recipient, MIT professor, and renowned researcher in programming language and systems design.
+
+3Stakes are generally a less ideal weapon for killing monsters.

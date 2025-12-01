@@ -1,0 +1,211 @@
+{
+  "metadata": {
+    "type": "fim_easy_medium",
+    "count": 20,
+    "difficulty": "easy_medium",
+    "description": "1-several lines missing or 1 method in class",
+    "topics_covered": ["adapter", "observer", "mvc", "decorator", "strategy", "command", "testing", "inheritance"]
+  },
+  "questions": [
+    {
+      "id": "fim_easy_001",
+      "topic": "adapter",
+      "description": "Implement the add method in an IntSet2ToIntSet1Adapter that adapts IntSet2 operations to IntSet1 interface",
+      "prefix": "public class IntSet2ToIntSet1Adapter implements IntSet1 {\n  private final IntSet2 adaptee;\n\n  public IntSet2ToIntSet1Adapter(IntSet2 adaptee) {\n    this.adaptee = adaptee;\n  }\n\n  @Override\n  public void add(int value) {\n",
+      "suffix": "  }\n\n  @Override\n  public void remove(int value) {\n    adaptee.differenceFrom(IntSet2Impl.singleton(value));\n  }\n}",
+      "expected_answer": "    adaptee.unionWith(IntSet2Impl.singleton(value));",
+      "hints": ["Use unionWith with a singleton set", "IntSet2Impl.singleton creates a set with one element"],
+      "context_chunks": ["Lecture 17 The Adapter Pattern - unionWith method"]
+    },
+    {
+      "id": "fim_easy_002",
+      "topic": "adapter",
+      "description": "Implement the member method that checks if a value exists in the adapted set",
+      "prefix": "public class IntSet2ToIntSet1Adapter implements IntSet1 {\n  private final IntSet2 adaptee;\n\n  @Override\n  public boolean member(int value) {\n",
+      "suffix": "  }\n}",
+      "expected_answer": "    return adaptee.isSupersetOf(IntSet2Impl.singleton(value));",
+      "hints": ["A set is a superset of {x} if and only if it contains x", "Use isSupersetOf with a singleton"],
+      "context_chunks": ["Lecture 17 The Adapter Pattern - member method"]
+    },
+    {
+      "id": "fim_easy_003",
+      "topic": "adapter",
+      "description": "Implement the iterator method that returns an iterator over the adapted set's elements",
+      "prefix": "public class IntSet2ToIntSet1Adapter implements IntSet1 {\n  private final IntSet2 adaptee;\n\n  @Override\n  public Iterator<Integer> iterator() {\n",
+      "suffix": "  }\n}",
+      "expected_answer": "    return adaptee.asList().iterator();",
+      "hints": ["IntSet2 has an asList() method", "List has an iterator() method"],
+      "context_chunks": ["Lecture 17 The Adapter Pattern - iterator implementation"]
+    },
+    {
+      "id": "fim_easy_004",
+      "topic": "adapter",
+      "description": "Implement the remove method for the EnumeratorIterator adapter that wraps an Enumeration",
+      "prefix": "class EnumeratorIterator<T> implements Iterator<T> {\n  private final Enumeration<T> enumeration;\n\n  @Override\n  public void remove() {\n",
+      "suffix": "  }\n}",
+      "expected_answer": "    throw new UnsupportedOperationException(\"Cannot remove from Enumeration\");",
+      "hints": ["Enumeration doesn't support removal", "UnsupportedOperationException is the documented response"],
+      "context_chunks": ["Lecture 17 The Adapter Pattern - Enumeration adapter"]
+    },
+    {
+      "id": "fim_easy_005",
+      "topic": "mvc",
+      "description": "Implement the constructor for TicTacToeConsoleController with null validation",
+      "prefix": "public class TicTacToeConsoleController implements TicTacToeController {\n  private final Readable in;\n  private final Appendable out;\n\n  public TicTacToeConsoleController(Readable in, Appendable out) {\n",
+      "suffix": "  }\n}",
+      "expected_answer": "    if (in == null || out == null) {\n      throw new IllegalArgumentException(\"Input and output cannot be null\");\n    }\n    this.in = in;\n    this.out = out;",
+      "hints": ["Validate parameters are not null", "Throw IllegalArgumentException for null inputs"],
+      "context_chunks": ["Lecture 9 - TicTacToeConsoleController"]
+    },
+    {
+      "id": "fim_easy_006",
+      "topic": "mvc",
+      "description": "Implement the main method that creates and starts a TicTacToe game with console I/O",
+      "prefix": "public class Main {\n  public static void main(String[] args) {\n",
+      "suffix": "  }\n}",
+      "expected_answer": "    new TicTacToeConsoleController(new InputStreamReader(System.in),\n        System.out).playGame(new TicTacToeModel());",
+      "hints": ["Use InputStreamReader to wrap System.in as Readable", "Create controller then call playGame with a new model"],
+      "context_chunks": ["Lecture 9 - Main method setup"]
+    },
+    {
+      "id": "fim_easy_007",
+      "topic": "testing",
+      "description": "Implement a JUnit test that verifies add() makes an element a member of the set",
+      "prefix": "public class IntSetTest {\n  private IntSet set;\n\n  @Before\n  public void setup() {\n    set = new IntSet1Impl();\n    set.add(5);\n  }\n\n  @Test\n  public void testAddMakesMember() {\n",
+      "suffix": "  }\n}",
+      "expected_answer": "    assertTrue(set.member(5));",
+      "hints": ["Use assertTrue to verify boolean condition", "member() returns true if element is in set"],
+      "context_chunks": ["Lecture 5 - JUnit testing"]
+    },
+    {
+      "id": "fim_easy_008",
+      "topic": "testing",
+      "description": "Implement a test that verifies the constructor throws IllegalArgumentException for negative hours",
+      "prefix": "public class DurationTest {\n  @Test\n  public void testNegativeHoursThrows() {\n",
+      "suffix": "  }\n}",
+      "expected_answer": "    assertThrows(IllegalArgumentException.class,\n        () -> { new HMSDuration(-1, 0, 0); });",
+      "hints": ["Use assertThrows with exception class", "Lambda contains the code expected to throw"],
+      "context_chunks": ["Lecture 3 - Duration testing"]
+    },
+    {
+      "id": "fim_easy_009",
+      "topic": "strategy",
+      "description": "Implement the chooseMove method for a random TicTacToe strategy",
+      "prefix": "public class RandomStrategy implements TicTacToeStrategy {\n  private final Random random = new Random();\n\n  @Override\n  public Coord chooseMove(TicTacToeModel model, Piece forWhom) {\n    List<Coord> available = getEmptyCells(model);\n    if (available.isEmpty()) {\n      return null;\n    }\n",
+      "suffix": "  }\n}",
+      "expected_answer": "    return available.get(random.nextInt(available.size()));",
+      "hints": ["Pick a random index from available moves", "random.nextInt(n) returns 0 to n-1"],
+      "context_chunks": ["Lecture 16 - Strategy pattern"]
+    },
+    {
+      "id": "fim_easy_010",
+      "topic": "inheritance",
+      "description": "Implement the isSupersetOf method by iterating through the other set's elements",
+      "prefix": "public class IntSet2ToIntSet1Impl extends IntSet1Impl implements IntSet2 {\n  @Override\n  public final boolean isSupersetOf(IntSet2 other) {\n",
+      "suffix": "  }\n}",
+      "expected_answer": "    for (int z : other.asList()) {\n      if (!member(z)) {\n        return false;\n      }\n    }\n    return true;",
+      "hints": ["Check if every element of other is in this set", "Return false immediately if any element is missing"],
+      "context_chunks": ["Lecture 17 - Adapter isSupersetOf"]
+    },
+    {
+      "id": "fim_easy_011",
+      "topic": "decorator",
+      "description": "Implement the member method for InstrumentedIntSet using delegation",
+      "prefix": "public class InstrumentedIntSet implements IntSet {\n  private final IntSet delegate;\n\n  public InstrumentedIntSet(IntSet delegate) {\n    this.delegate = delegate;\n  }\n\n  @Override\n  public boolean member(int value) {\n",
+      "suffix": "  }\n}",
+      "expected_answer": "    return delegate.member(value);",
+      "hints": ["Simply forward the call to the delegate", "No additional logic needed for member"],
+      "context_chunks": ["Lecture 11 - Composition pattern"]
+    },
+    {
+      "id": "fim_easy_012",
+      "topic": "command",
+      "description": "Implement the move method for SimpleTurtle that updates position based on heading",
+      "prefix": "public class SimpleTurtle implements TurtleModel {\n  private Position2D position;\n  private double heading;\n\n  @Override\n  public void move(double distance) {\n",
+      "suffix": "  }\n}",
+      "expected_answer": "    double x = distance * Math.cos(Math.toRadians(heading));\n    double y = distance * Math.sin(Math.toRadians(heading));\n    position = new Position2D(position.getX() + x, position.getY() + y);",
+      "hints": ["Use trigonometry to calculate x and y components", "Math.toRadians converts degrees to radians"],
+      "context_chunks": ["Lecture 10 - Turtle graphics"]
+    },
+    {
+      "id": "fim_easy_013",
+      "topic": "mvc",
+      "description": "Implement the default constructor for TicTacToeModel that initializes the board",
+      "prefix": "public class TicTacToeModel implements TicTacToe {\n  private Player[][] board;\n  private Player turn;\n\n  public TicTacToeModel() {\n",
+      "suffix": "  }\n}",
+      "expected_answer": "    board = new Player[3][3];\n    turn = Player.X;",
+      "hints": ["Create a 3x3 array of Player", "X typically goes first"],
+      "context_chunks": ["Lecture 7 - TicTacToe model"]
+    },
+    {
+      "id": "fim_easy_014",
+      "topic": "testing",
+      "description": "Implement a test verifying that remove actually removes an element",
+      "prefix": "@Test\npublic void testRemoveRemoves() {\n  IntSet set = new IntSet1Impl();\n  set.add(10);\n  set.remove(10);\n",
+      "suffix": "}",
+      "expected_answer": "  assertFalse(set.member(10));",
+      "hints": ["After removal, member should return false", "Use assertFalse for negative assertions"],
+      "context_chunks": ["Lecture 5 - Testing"]
+    },
+    {
+      "id": "fim_easy_015",
+      "topic": "adapter",
+      "description": "Implement the unionWith method in the class adapter",
+      "prefix": "public class IntSet2ToIntSet1Impl extends IntSet1Impl implements IntSet2 {\n  @Override\n  public final void unionWith(IntSet2 other) {\n",
+      "suffix": "  }\n}",
+      "expected_answer": "    for (int i : other.asList()) {\n      add(i);\n    }",
+      "hints": ["Iterate through other's elements", "Add each element to this set"],
+      "context_chunks": ["Lecture 17 - Adapter unionWith"]
+    },
+    {
+      "id": "fim_easy_016",
+      "topic": "mvc",
+      "description": "Implement toString for Duration that returns the HH:MM:SS format",
+      "prefix": "public class HMSDuration implements Duration {\n  private final int hours, minutes, seconds;\n\n  @Override\n  public String toString() {\n",
+      "suffix": "  }\n}",
+      "expected_answer": "    return asHms();",
+      "hints": ["asHms() already returns the formatted string", "toString can delegate to existing methods"],
+      "context_chunks": ["Lecture 3 - Duration class"]
+    },
+    {
+      "id": "fim_easy_017",
+      "topic": "testing",
+      "description": "Implement the @Before setup method for Duration tests",
+      "prefix": "public class DurationTest {\n  private Duration day;\n  private Duration ninetySeconds;\n\n  @Before\n  public void setup() {\n",
+      "suffix": "  }\n}",
+      "expected_answer": "    day = new HMSDuration(24, 0, 0);\n    ninetySeconds = new HMSDuration(0, 0, 90);",
+      "hints": ["Initialize test fixtures with known values", "90 seconds should be auto-canonicalized to 1:30"],
+      "context_chunks": ["Lecture 3 - Duration testing"]
+    },
+    {
+      "id": "fim_easy_018",
+      "topic": "command",
+      "description": "Implement the turn method for SimpleTurtle",
+      "prefix": "public class SimpleTurtle implements TurtleModel {\n  private double heading;\n\n  @Override\n  public void turn(double angleDegrees) {\n",
+      "suffix": "  }\n}",
+      "expected_answer": "    heading += angleDegrees;",
+      "hints": ["Simply add the angle to current heading", "No trigonometry needed for turning"],
+      "context_chunks": ["Lecture 10 - Turtle turn"]
+    },
+    {
+      "id": "fim_easy_019",
+      "topic": "mvc",
+      "description": "Implement compareTo for Duration based on total seconds",
+      "prefix": "public class HMSDuration implements Duration {\n  @Override\n  public int compareTo(Duration that) {\n",
+      "suffix": "  }\n}",
+      "expected_answer": "    return Long.compare(this.inSeconds(), that.inSeconds());",
+      "hints": ["Compare by total seconds", "Long.compare handles the comparison correctly"],
+      "context_chunks": ["Lecture 3 - Duration comparison"]
+    },
+    {
+      "id": "fim_easy_020",
+      "topic": "adapter",
+      "description": "Implement differenceFrom method that removes all elements of other from this set",
+      "prefix": "public class IntSet2ToIntSet1Impl extends IntSet1Impl implements IntSet2 {\n  @Override\n  public final void differenceFrom(IntSet2 other) {\n",
+      "suffix": "  }\n}",
+      "expected_answer": "    for (int i : other.asList()) {\n      remove(i);\n    }",
+      "hints": ["Iterate through other's elements", "Remove each element from this set"],
+      "context_chunks": ["Lecture 17 - Adapter differenceFrom"]
+    }
+  ]
+}

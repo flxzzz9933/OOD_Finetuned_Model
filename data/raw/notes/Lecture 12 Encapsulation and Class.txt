@@ -1,0 +1,285 @@
+Lecture 12: Encapsulation and Class Invariants
+SlidesJava source (.zip)
+
+1 Model representation
+When we last talked about Connect 𝑁
+, we designed an interface for our game model:
+
+interface ConnectNModel {
+  static enum Status { Playing, Stalemate, Won, }
+
+  Status getStatus();
+  boolean isGameOver();
+  int getNextPlayer();
+  int getWinner();
+
+  Integer getPlayerAt(int x, int y);
+  boolean isColumnFull(int which);
+
+  int move(int who, int where);
+
+  int getWidth();
+  int getHeight();
+  int getGoal();
+  int getPlayers();
+}
+The next step in implementing this interface is to consider what data we need—what fields—to implement it. If nothing else, clearly we need some way to represent the game grid and its tokens. Since the grid is rectangular, we want to use some kind of sequence of sequences of Integers that will let us use the positions to access the cell contents.
+
+Some of these methods return simple quantities that don’t change, so for those we can just store each in a field:
+
+public int width;
+public int height;
+public int goal;
+public int players;
+Clearly we need to represent the state of the game grid, in particular which tokens are where. Since the grid is essentially a two-dimensional matrix, we can use an array of arrays or list of lists. In general this choice is arbitrary (except for the effects of locality), but in this case columns may make more sense, because we can use shorter lists to represent not-yet-full columns and grow them as necessary.
+
+public List<List<Integer>> columns;
+Finally, we need state in order to be able to tell the client who the current player is and who won. These fields, unlike the others, will be mutable:
+
+public Status status;
+public int turn;
+1.1 Reductio...
+Clearly the fields listed above will work, but what if we are thinking about flexibility for the future? For example, perhaps we don’t want to commit right now to players being represented as ints, so we generalize to Object in the two places where we represented players as integers:
+
+public Object turn;
+public List<List<Object>> columns;
+Or perhaps we’re considering the possibility of extending Connect 𝑁
+ into a third dimension, or an arbitrary number of dimensions. If we want to represent 𝑘
+-D game grids, a list-of-lists won’t do, so perhaps it’s better to defer that decision until later as well. And of course, width and height are also insufficient for 𝑘
+-D, so we generalize with a map from dimension names to their sizes:
+
+public Map<String, Integer> dimensions;
+public Object hypercolumns;
+At this point, we might notice that our game configuration consists of the map dimensions and two ints, goal and players. We could store those in the map as well, paving the way for adding more properties in the future without having to change the representation. So at this point, these are our fields:
+
+public Map<String, Integer> configuration;
+
+public Status status;
+public Object turn;
+public Object hypercolumns;
+Now, not having played 𝑘
+-D Connect-𝑁
+ before, I’m not sure that we won’t need more potential statuses in a game of that complexity, and for that matter, a turn may involve multiple players. But fear not! We don’t have to decide on either of those things now:
+
+public Map<String, Object> properties;
+public Object hypercolumns;
+At this point, we might as well go big, right? We could represent the game model now, and every potential future game idea we might imagine, with one field:
+
+public Map<String, Object> properties;
+Now you’re programming in Python.
+
+1.2 ...Ad Absurdum
+With this change, what have we gained and what have we lost? Certainly we’ve gained a lot of flexibility, but in return we’ve replaced our expression of intent, the clear meaning of the several named fields, with an amorphous mapping. We’ve given up the ability to control the shape of our data.
+
+Like almost any other property of a design, increasing flexibility involves trade-offs. The design we ended up with above is clearly too flexible, but is there reason to believe that the design we started with isn’t too general as well?
+
+2 Bad freedoms
+With increased flexibility comes additional ways to abuse that flexibility. In particular, there are a lot of things we can do with our initial representation that should likely be disallowed:
+
+The width, height, goal, or players fields permit changes mid-game.
+The width, height, goal, or players fields might be zero or negative.
+The status or columns field might be null.
+The shape of the list-of-lists in columns might not match the dimensions in width and height; columns.size() might differ from width, or it may contain a column whose size exceeds height.
+Or columns might contain Integer values that don’t stand for players.
+And more generally, the client can look at or change whatever it pleases.
+Some of the above bad things are easily prohibited using the correct language features, and others can be prohibited by careful programming.
+
+2.1 Restricting fields using the language
+This is the easy part. For fields whose values shouldn’t be updated1, we can tell the Java compiler using the final keyword, and it will prevent the fields from changing for us:
+
+public final int width;
+public final int height;
+public final int goal;
+public final int players;
+You might wonder, Why bother with final when I can just not change the fields? This question generalizes to any design choice that imposes a restriction on how an object can be used, and the same answer generally apply: People make mistakes. It could be you in six months when you’ve forgotten how the class works, or it could be that your coworkers and successors don’t know that the field isn’t supposed to be changed. Sure, you could let them know with a comment, but comments are easily missed and error messages aren’t. So just in case, arrange to get that error message by using final.
+
+As a general rule, declare every field that you don’t intend to change as final.
+
+The other problem that Java can solve for us directly is the last one, that clients have unrestricted freedom to access the class’s fields. We can lock clients out by specifying a more restrictive access level. Java has four, though one is implicit. Ordered from most to least restrictive:
+
+
+
+The ordering is inclusive, in the sense that if a member is visible from some other code with one of the modifiers, then it will also be visible with the weaker modifiers (lower in the table). If a field, method, constructor, or nested class, enumeration, or interface is marked private then it is visible only from within the same top-level class. (That is, nested classes are considered to be part of the same class for the purpose of access levels.) If the declaration is unmarked, it has default or package scope, which means that is visible from the entire Java package in which it lives. A protected member is additionally visible from any subclasses of the class where it’s declared, and public member is visible everywhere.
+
+To see what this means in a bit more context, consider these four classes in two packages:
+
+package first;
+
+    public class Base {
+        private   int privateField;
+                  int packageField;
+        protected int protectedField;
+        public    int publicField;
+    }
+
+    class FirstHelper { ... }
+
+package second;
+
+    public class Derived extends Base { ... }
+
+    class SecondHelper { ... }
+From which classes is each member field of Base visible? Just use the table above!
+
+
+
+As with final, the best rule of thumb for using access level modifiers is to follow the Principle of Least Privilege:
+
+Every program and every privileged user of the system should operate using the least amount of privilege necessary to complete the job.
+
+For fields, this means private the vast majority of the time. Exceptions are few:
+
+Constants, meaning static final fields containing immutable values, are often public.
+Fields that must be accessible to subclasses can be protected (though often it’s better to give a subclass that kind of access via methods).
+When multiple classes within the same package are cooperating in some close way such that it doesn’t make sense for them to communicate via interfaces, you can use the default access level.
+Every time you make a field more accessible than it needs to be, you lose further control of what happens to it, and some ability to change that part of the representation in the future. Next, let’s explore how we can use the control that access levels give us in order to eliminate additional bad freedoms.
+
+3 Example: the Even class
+Above we discussed the idea of bad freedoms—that a representation might be able to do things that don’t make sense in terms of the information that it models. For example, the width field of our proposed Connect 𝑁
+ model implementation is declared with type int, which means that as far as Java is concerned, any int goes, even if it’s something like -8, which makes no sense as a width.
+
+Some bad possibilities are ruled out by the language we’re programming in. In Java, if we declare width to be an int then the language guarantees that it will be.2 However, Java (and most but not all other languages) gives us no way to say directly that width must be positive. But it does give us a way to control it, if we think and program carefully.
+
+Consider this class for representing even integers:
+
+/**
+ * An even integer.
+ */
+final class Even {
+  /*
+   * Constructs an {@code Even} from an even {@code int}.
+   *
+   * @param value  the {@code int} representation of the even number
+   * @throws IllegalArgumentException if {@code value} isn't even
+   */
+  public Even(int value) {
+    if (value % 2 != 0) {
+      throw IllegalArgumentException("value must be even");
+    }
+
+    this.value = value;
+  }
+
+  /**
+   * Returns the even value as an {@code int}.
+   *
+   * @return the even {@code int}
+   */
+  public int getValue() {
+    return value;
+  }
+  private final int value;
+}
+The Even class has one field, an int representing the number. Given the intended meaning of an Even class, it would be wrong for field value to contain an odd number (or from the client perspective, that the result of getValue() would be odd). Because the Java programming language doesn’t understand, much less track, evenness, it cannot directly enforce this restriction for us. Instead, the Even class enlists other rules of the language to enforce its requirements.
+
+How do we know that field value can never be odd?
+
+The constructor only initializes with even numbers and throws when given an odd number.
+The value of a final field cannot change.
+Together, these two facts are enough to establish that value is always even, because the constructor makes that so and nothing3 changes the evenness of value.
+
+Let’s consider what happens when the class is modified slightly. Like Even, EvenCounter’s value should always be even, but EvenCounter affords the client to increment the value field:
+
+final class EvenCounter {
+  public EvenCounter(int value) {
+    if (value % 2 != 0) {
+      throw IllegalArgumentException("value must be even");
+    }
+
+    this.value = value;
+  }
+
+  public int nextValue() {
+    return value += 2;
+  }
+  private int value;
+}
+Again we’d like ensure that value is always even, but the situation is complicated by mutation.
+
+How do we know? Consider that
+
+the constructor initializes value to an even number,
+the only way to change a private field is by calling a method, and
+method nextValue() preserves evenness.
+That last point is key. Does nextValue() ensure that value is even when it returns? Not at all! However, it does ensure that if value is even when nextValue() is called then value continues to be even upon the method’s return.
+
+We can use similar reasoning to determine whether adding particular methods would allow objects of the class to violate its rules. Consider, for example, these methods:
+
+public void reset() {
+  value = 0;
+}
+Regardless of the prior value of value, this leaves it in a correct (even) state. So adding reset is no threat.
+
+public int scale(int factor) {
+  return value *= factor;
+}
+Here the situation is subtler, because scale does not in fact ensure that after it's called, value is even. However, if value is even to begin with then multiplying by another int will leave it even afterward.
+
+public int halve() {
+  return value /= 2;
+}
+Unlike scale, which can only make harmless changes, division can produce oddness from evenness. Thus, halve can be called when the object is in a good state and leave it in a bad state, so we reject halve.
+
+public int half() {
+  return value / 2;
+}
+Method half looks strikingly similar to method halve, but half is fine and won't break our evenness abstract. Can you see why?
+
+4 What’s going on here?
+In the preceding section, we employed a technique for reasoning about programs called a class invariant. A class invariant is a logical statement about the instantaneous state of an object that is ensured by the constructors and preserved by the methods. Let’s break that down:
+
+A logical statement is a claim that is true or false.
+The instantanous state of an object is the combination of values of all its fields at some point in time.
+The invariant is ensured by constructors in the sense that whenever a public constructor returns, the logical statment holds.
+Preserving the logical statement means that the method doesn’t introduce nonsense—instead, we know that if given a object in a good state then it will leave the object in a good state as well.
+Here are some comments that are not class invariants:
+
+// INVARIANT: value is small
+This doesn’t work as an invariant because it isn’t a logical statement, hinging as it does on the vague word “small.”
+
+// INVARIANT: value never decreases
+This is another statement that, true or not, it’s not of the right form to be a class invariant because it’s a temporal statement rather than a statement that applies at any single point in time.
+
+// INVARIANT: value is non-negative
+Here we have a logical statement about the instantaneous state of the object, but the statement isn’t true—the constructor is fine being passed a negative number—so it isn’t an invariant.
+
+// INVARIANT: value an int
+True, but vacuous because Java’s type system takes care of this invariant for us. It’s very rarely worth listing.
+
+5 Back to Connect N
+We can apply the class invariant technique to our implementation of the Connect N model to rule out the additional kinds of nonsense states that were method earlier, such as dimensions being negative or the columns list containing values that don’t correspond to players. We guard against these possibilities by imposing class invariants and checking that they’re respected. In the case of Connect N, we want know that the dimensions are always sensible (positive), the turn stands for a valid player, the length of the columns list equals width of the grid, the length of every column in the list doesn’t exceed height, an all the elements of the columns are non-null integers between 0 and players - 1.
+
+In order to apply class invariant reasoning, we need to determine what invariants we have (or think we have), and then check the code to make sure that’s true.
+
+6 The class invariant reasoning principle
+Class invariants enable a form of reasoning called rely-guarantee. The idea is that components rely on some things being true when they’re invoked, and they guarantee some things being true upon return (provide their reliance is satisfied). In particular,
+
+if the constructor ensures some property,
+and every method (or means by which the client can mutate the object) preserves the property,
+then every public method, on entry, can rely on the property.
+In this way, class invariants allow you to rule out object representations that you don’t want.
+
+7 Example: rational numbers
+Sometimes we want to rule out representations because they don’t make sense in terms of the relevant domain, but another reason to restrict representations is to make other parts of our program simpler. For example, we might write rational number class using a fractional representation with a numerator field and a denominator field. Unfortunately, this representation has a wrinkle, because there are many ways to write each rational number as a fraction.
+
+We now consider three iterations of an implementation of a simple Rational interface:
+
+RationalImpl1 disallows constructing an object with zero denominator (common the next two iterations as well), but imposes no other restrictions on the values of the num and den fields and deals with the possibility of different ways to represent the same number on an ad-hoc basis, converting where necessary.
+RationalImpl2 documents the invariant that den != 0. It then takes advantage of the new invariant by introducing a private fast path for Rational construction where the denominator is guaranteed to be zero. It does this by removing all validation logic from the constructor to a static factory method, and then making the constructor, which now trusts its parameters, private.
+RationalImpl3 adds the invariant that the fractional representation is in least terms, or equivalently, that the greatest common divisor between den and num is 1. Least-terms fractions define a canonical represention for each rational, which means that now we can compare rationals by comparing their components without any kind of conversion. And operations that are known to preserve least terms, such as negation, are allowed to skip validation altogther when constructing a the result.
+8 Other invariants
+The notion of an invariant should be familiar from last year. Recall from Fundies 2 our discussion of heaps, which were binary trees that obeyed two invariants simultaneously:
+
+A structural invariant, the fullness property, that ensured the tree with 𝑛
+ items was always as short as it could possibly be, which in turn ensured 𝑂(log𝑛)
+ performance. It also came in handy when we looked at clever data representations of heaps using arrays.
+A logical invariant, the heap-ordering property, that ensured the largest values were always near the root of the tree and that all subtrees were themselves heaps.
+These invariants gave us similar rely-guarantee reasoning principles as the class invariants we discussed above, albeit based on totally different premises. Note that both of these invariants are instantaneous properties, like class invariants, but they are not properties of a single isolated object (though if you squint and treat the entire heap as a “single” entity, it’s pretty close). We then used these invariants to drive our algorithm design.
+
+Class invariants are similar in spirit, but a bit different in scope. They focus more on making all the methods of a single class work properly in concert, so that other parts of the program can rely on the property being true. When a single class implements an entire data type, class invariants and logical invariants become largely the same thing, but it’s rare for a data type to be implemented by just one class!
+
+1Meaning the primitive or reference value in the fields; objects referred to by references in final fields can still be mutated.
+
+2What possibilities does your favorite language let you rule out?
+
+3Well, nothing within Java, but take a look at JNI.

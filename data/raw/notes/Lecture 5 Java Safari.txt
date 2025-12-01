@@ -1,0 +1,903 @@
+Lecture 5: Java Safari
+Java source (.zip)Slides
+1 Objectives of the lecture
+The objective of this lecture is to introduce additional Java structures and features that were either not taught in previous courses, or were not emphasized enough. These features would be useful going forward.
+
+2 Packages and code organization
+There’s a lot of code in the world. Plenty of that code implements similar functionality: for example, many programs or libraries might define lists or trees or other concepts with common, repeated names. But if multiple libraries define the same names of classes or interfaces, then it becomes impossible to use those libraries together, since the names are now ambiguous. This is one scenario of a common problem, where we need a way to distinguish among distinct definitions with the same name. A simple real-world analogue: there are many people who share the same first name, and the common solution is to group people together by family names.
+
+2.1 Defining packages
+Java deals with this problem via packages. A package is intended to be a logically coherent group of classes and interfaces, and we will fully qualify the name of a class with the name of its package. Package names are typically written as dot.separated.names, starting from the most general and moving rightward to more specific “subpackages”. For example, the built-in List interface has a fully-qualified name of java.utils.List — the package name here is java.utils.
+
+Java also makes a one-to-one correspondence between packrage names and directory paths. For the java.utils.List example, the source code organization looks something like
+
+TheImplementationOfJava
++-src/
+  +-java/
+    +-utils/
+      List.java
+The src/ directory isn’t part of the package name; it’s simply the root directory underneath which all various packages and code can be implemented.
+
+In your own projects, as you define various packages, you’ll need to ensure that your directory structure in your src/ directory matches your package structure. For example, if Assignment 123, part 1 asks you to implement your code in package cs3500.assignment123.part1, then you should ensure that your project looks something like
+
+YourProject
++-src/
+  +-cs3500/
+    +-assignment123/
+      +- part1/
+        +- ...various Java files...
+Whenever you define code within a package, the very first line of your files must declare your package:
+
+package cs3500.assignment123.part1;
+The package declaration must match the directory path; otherwise Java will be unable to find your classes at compile or runtime.
+
+2.2 Importing code from other packages
+When you want to use code from another package, you import the names into your file so that they are more convenient to use. For example, you could simply write
+
+java.utils.List<String> strs = new java.utils.ArrayList<String>();
+and always fully-qualify all the names of every type you want to use. But this is very tedious. Instead, you can write
+
+import java.utils.*;
+
+List<String> strs = new ArrayList<String>();
+The import line at the top ensures that you can use unqualified names for convenience, while still explaining to the compiler which fully-qualified names you mean to use. The .* suffix means “Please include all the names in the package being imported.” If you only want to import a single name, you can do so explicitly:
+
+import java.utils.List;
+import java.utils.ArrayList;
+// etc.
+Note that imports and package declarations are intended to be counterparts of each other.
+
+2.3 The default package
+In Fundies 2, we never dealt with packages at all. You never wrote a package ...; declaration, and never dealt with subdirectories of your src/ directory. The “base case” of packages is a package with no name: it’s known as the “default” package. In Fundies 2, we never worried about packages, but we also never had so many class or interface definitions that we had to worry about the name collisions that packages help us avoid.
+
+It is impossible to import classes from a default package...but once programs get large enough, it is considered bad practice to use the default package at all.
+
+2.4 Organizing your project directories
+You may have noticed that IntelliJ automatically creates a src/ directory in which the source-code of your program should live. You should create a second directory, called test/, in which you place all your test classes. You can create a package organization within your test/ directory that mimics the organization within src/ — IntelliJ is configured to treat the two directories as “overlapped” with each other, so that tests in one package can see source defintiions from that same package.
+
+The reason for having two distinct directories is to ensure that code-to-be-released-to-customers is physically separated from code-that-tests-implementations. You should ensure that you preserve this distinction in your projects.
+
+3 The static keyword?
+3.1 What is it?
+In programming generally, static describes things that happen or are determined at compile time, and dynamic describes things that happen or are determined at run time. In object-oriented programming, and in Java in particular, static means that some member—a field, method, or nested class—is part of its class, whereas a non-static member is associated with every object of the class. Another way of saying this would be that static things are shared by all objects of the class, whereas each object gets its own unique instance of non-static things.
+
+3.2 How do we use it?
+Field, class, and method members of classes can be declared static. In each case the idea of being associated with the classes versus its instances must be interpreted slightly differently.
+
+3.2.1 Static fields
+An instance (non-static) field is a separate slot in each object of a class, whereas a static field has one slot for the whole class. For example, consider a class with one of each kind of field:
+
+class Widget {
+  int widgetId;
+  static int widgetIdCounter = 3;
+}
+For each Widget w we create, there’s a separate w.widgetId variable. Whereas there is only one Widget.widgetIdCounter variable, which we refer to as a member of the class Widget rather than a particular object w:
+
+assertEquals( 3, Widget.widgetIdCounter );
+
+Widget one = new Widget();
+one.widgetId = 1;
+
+Widget two = new Widget();
+two.widgetId = 2;
+
+assertEquals( 1, one.widgetId );
+assertEquals( 2, two.widgetId );
+assertEquals( 3, Widget.widgetIdCounter );
+
+one.widgetId = 11;
+two.widgetId = 12;
+Widget.widgetIdCounter = 13;
+
+assertEquals( 11, one.widgetId );
+assertEquals( 12, two.widgetId );
+assertEquals( 13, Widget.widgetIdCounter );
+In a sense, static fields are Java’s version of global variables, and like globals, they should be used sparingly. Public, static, non-final fields warrant extra suspicion.
+
+3.2.2 Static methods
+Unlike dynamic methods, static methods do not require an instance of a class to operate on; as with static fields, the method is treated as a member of the class. For example:
+
+class Widget {
+  public void getWidgetId() { return widgetId; }
+  int widgetId;
+
+  public static void resetWidgetIdCounter() { widgetIdCounter = 0; }
+  static int widgetIdCounter = 3;
+}
+Note that it would be a static (compile-time) error for resetWidgetIdCounter to refer to widgetId, because widgetId is a non-static field, and static methods don’t operate on an individual instance. In order to call non-static method getWidgetId(), we need an instance of the widget class to call it on, because a non-static method can use the non-static fields of the object:
+
+assertEquals( 11, one.getWidgetId() );
+assertEquals( 12, two.getWidgetId() );
+But static methods are called on the class rather than an instance, and thus don’t have an instance (this) to work on:
+
+assertEquals( 13, Widget.getWidgetId() );
+Static methods are useful when they only work on data that is provided as their arguments, and do not require data stored in non-static fields. For example, the Math class has many static methods, because all of them operate only on what is provided to them as input.
+
+3.2.3 Static classes
+The concept of static classes only applies to nested classes (i.e. classes that are defined inside another class).
+
+Nested classes are useful when one has to define a class with the sole purpose of helping another class. Nesting this helper class inside the main class makes the latter more self-contained. An example could be an iterator defined over a list.
+
+When a nested class is static, it behaves like an ordinary class, just nested in its enclosing class’s namespace. Much like a static variable is not associated with a unique object of its containing class, a static inner class is not associated with a unique object of the outer class. Thus it may be instantiated independent of an instantiation of the outer class.
+
+If Nested is a static member of Outer, then we refer to it as Outer.Nested when writing code that’s outside of Outer.
+
+//Case 1: Nested is a static class inside in Outer
+//instantiating Nested
+Outer.Nested nest = new Outer.Nested(...); //appropriate arguments to constructor
+
+//Case 2: Nested is a non-static class inside Outer
+//instantiating Nested requires instantiating Outer first
+Outer outer = new Outer(...);
+Outer.Nested nest = outer.new Nested(...); //nest is "linked" to object outer
+Furthermore, nested classes share the same private scope with their enclosing class. Thus, Outer can see all of Outer.Nested’s private members, and Outer.Nested can see all of Outer’s private members.
+
+In the Widget example above, rather than use a static field widgetIdCounter to generate widget IDs, we can manage the counter in a factory object:
+
+class Widget {
+  private Widget(...) { ... }
+
+  public static Factory factory() {
+    return new Factory();
+  }
+
+  public static class Factory {
+    public Factory() { ... }
+
+    public Widget create(...) {
+      ...
+      ++widgetIdCounter;
+      ...
+    }
+    private int widgetIdCounter;
+  }
+}
+In order to create Widgets, we first must create a Widget.Factory, which instantiates its own counter. Then we can use the factory to create Widget objects numbered using that factory’s counter:
+
+Widget.Factory factObj = Widget.factory();
+
+Widget w1 = factObj.create();
+Widget w2 = factObj.create();
+An advantage to this approach is that now we can create multiple independent factories, perhaps to work with multiple concurrent versions of some client system. Of course, if we actually want only one global numbering, then we can apply the singleton pattern.
+
+3.3 When should we use static?
+Use a static field when you want on variable for the whole class rather than one per object. Sometimes a class with do this privately to cache some kind of information or to keep track of some information about its instances, but for the most part static fields are rare except for constants. A constant should be a public static final field whose contents are immutable, and its name should be in all caps.
+
+Use a static method when you want to associate some method with a class that doesn’t depend on having an instance. The most common case for static methods are static factory methods, which produce objects of a class (and don’t require that we already have an object to do so). It’s also common to factor out implementation functionality into private static helper methods.
+
+Use a static class when you want a helper class that’s strongly associated with the enclosing class, especially when the helper doesn’t make sense on its own. Nesting a helper class also allows the outer class to see its private members and vice versa, which can be helpful when the two classes are tightly coupled. For example, it makes sense to nest a class implementing an iterator for a collection class inside the collection class, because the iterator probably doesn’t make sense without the collection class, and it is often useful for the iterator to be able to see into the collection objects.
+
+4 Arrays
+4.1 What are they?
+In Java, an array of type τ[] (where τ is any Java type) is a mutable, fixed-length, constant-time–indexed sequence of values of type τ. Let’s unpack that, from back to front:
+
+A sequence means that we have some number of things with a defined order (unlike a set, which has no order).
+Constant-time–indexed means that we can get (or set) any element of an array identified by its index (position) in the array, and how long it takes does not depend on the position or the size of the array.1
+Fixed-length means that once an array is created, its length never changes.
+Mutable means that the contents of the array—the elements—can be changed at will. Thus, they can change in content but not in length.
+4.2 How can we use them?
+To create a new array, use the special array form of the new operator, which comes in two main variants:
+
+A new, fully initialized array new int[] {2, 4, 6, 8} contains exactly the elements listed, which also determine its length.
+A new, uninitialized array new int[64] has the given size and is filled with the default value for its element type. For numeric types like int and double the default is zero, and for object types the default is null.
+As a special case, when used to initialize a variable as part of its declaration everything before the curly braces can be omitted:
+
+int[] intArray = {2, 4, 6, 8};
+The main operation on arrays is indexing, for both observing and updating the array. It’s also common to find out the length of an array using its length field.
+
+assertEquals(4, intArray[1]);
+assertEquals(8, intArray[3]);
+
+intArray[3] = 17;
+
+assertEquals(17, intArray[3]);
+
+assertEquals(4, intArray.length);
+The class Arrays (doc) provides a large number of static methods for working with arrays, such as searching, sorting, filling, and copying. It also provides a method for turning an array of any type T into a List (doc) of T: <T> List<T> asList(T... a).2 Ah, but what does that T... mean? It’s a special form of array. Read on...
+
+4.2.1 Varargs
+Suppose we want a method that takes an arbitrary number of strings. Of course arrays are good for this, since they represent arbitrary length sequences:
+
+void setPlayers(String[] newPlayers);
+However, passing an array is ugly and inconvenient when in the common case we don’t have an array already and want to list the elements directly in the method call:
+
+setPlayers(new String[] {"Crosby", "Stills", "Nash", "Young"});
+Instead, Java provides a way to declare a method that takes a variable number of arguments:
+
+void setPlayers(String... newPlayers);
+The ... parameter always comes last in the argument list, though there may be a number of ordinary parameters that come before it.
+
+Now when we call the method, it looks like it takes a variable number of string arguments:
+
+setPlayers("Crosby", "Stills", "Nash", "Young");
+Within the method, parameter newPlayers is an array just like before:
+
+void setPlayers(String... newPlayers) {
+    for (String player : newPlayers) {
+        addToGame(player);
+    }
+}
+If we already have an array ready to go, we can pass it directly:
+
+setPlayers(someArrayOfStrings);
+Whether we pass an existing array or use the varargs method call syntax, the callee receives an array.
+
+4.2.2 Array gotchas
+An array is represented as a reference to a chunk of memory, and the value of the array, so far as Java is concerned, is the reference itself, not the chunk of memory. This means that re-assigning or passing an array results in aliasing, having more than one name for the same thing:
+
+int[] anotherArray = intArray;
+anotherArray[0] = -9;
+assertEquals(-9, intArray[0]);
+Not only does == for arrays compare references rather than contents, but equals(Object) does as well. This means, for example, that this JUnit test will fail:
+
+assertEquals(new int[] {3, 6}, new int[] {3, 6}); // fails!
+Yes, the arrays have the same contents, but not the same physical identity. To test for equality on the contents of two arrays, use assertArrayEquals:
+
+assertArrayEquals(new int[] {3, 6}, new int[] {3, 6});
+In order to compare arrays by their values yourself, you should use the Arrays.equals(Object[], Object[]) method, which compares the elements of the arrays using their equals(Object) methods. Of course, if the contents of the arrays you are comparing are in turn arrays, those will each be compared by physical identity. If you have several layers of nested arrays and want to compare by the contents all the way down, use Arrays.deepEquals(Object[], Object[]). (Note that these methods can take Object[]s because in Java every array type is a subtype of Object[]. This design choice is actually a big problem, but we won’t get into it right now.)
+
+4.3 When should we use them?
+Mainly, you will use arrays because various existing APIs require them.
+
+You can use an array when you want a sequence of values that you can look up and update efficiently, addressed by their positions in the sequence. However, if the length of the sequence needs to change, you probably want to use a List instead (e.g., ArrayList or LinkedList). You can simulate a variable-length array by allocating new arrays and copying the elements over as needed, and this is in fact how ArrayList works (though there are some subtleties to avoiding a large number of inefficient copies).
+
+Since Lists can do everything that arrays can, why would we ever use an array? One reason would be if you know the length that you need up front, and you want to guarantee that you can never accidentally change it. Another reason is for efficiency, since higher-level sequences such as ArrayList build on top of arrays with additional checking and indirection. For example ArrayList provides the convenience of adding an arbitrary number of items to it, at the cost of some wasted space. This is usually not a concern. But if you are developing a program that must optimize its usage of memory or must be especially efficient in time (e.g. writing a device driver, writing a program for a special device with limited resources), using an array may give you greater control over usage of resources.
+
+5 Characters
+5.1 What are they?
+The character type, char, represents single graphemes or symbols for writing text. This includes letters ('a', 'b', 'A', 'B', 'α', 'β', etc.), digits ('0', '1', '١', '٢', etc.), punctuation ('.', '-', '«', etc.), and whitespace (' ', '\n', '\t', '\v', etc.).
+
+5.2 How can we use them?
+The Character class provides, among other things, static methods for working with characters, such as tests for character categories:
+
+assertTrue(Character.isLetter('a'));
+assertTrue(Character.isLetter('β'));
+assertFalse(Character.isLetter('8'));
+
+assertFalse(Character.isLowercase('Z'));
+assertTrue(Character.isLowercase('z'));
+Strings are sequences of characters, and the Java String class provides methods for working with them as such. The method charAt(int) lets us treat a string as an (immutable) array by allowing us to look up characters by position:
+
+assertEquals('a' , "abcde".charAt(0));
+assertEquals('c' , "abcde".charAt(2));
+Additionally, we can search for characters in strings3, and convert between strings and arrays of characters:
+
+assertEquals(0, "abcde".indexOf('a'));
+assertEquals(2, "abcde".indexOf('c'));
+assertEquals(-1, "abcde".indexOf('f'));
+
+char[] abc = {'a', 'b', 'c'};
+assertArrayEquals(abc, "abc".toCharArray());
+assertEquals("abc", String.valueOf(abc));
+5.3 When should we use them?
+Characters are really for only two things:
+
+For processing a String character by character to query, transform, decompose, or construct it incremementally. For example, if we want to split a sentence up into individual words, then processing it character-by-character lets us find the word boundaries and whitespace in between.
+For representing text-like values that are always exactly one character long. This is fairly rare, but one place it often shows up is representing keystrokes in GUIs, which actually doesn’t work very well. (Why?)
+6 Primitive types versus reference types
+6.1 What are they?
+Java makes a distinction between primitive types and reference (or pointer) types. Understanding this distinction will make a variety of other features and quirks of Java make sense. Let’s consider what Java variables really mean.4 In this diagram, there are six variables, each of which is represented as a box in the left column that contains the variable’s value:
+
+
+
+The first thing to notice about the six variables is that none has a compound value, composed of multiple components—each contains a single, simple value, which may be an immediate number, a reference to something else, or null.
+
+Variables a and b contain values of primitive (meaning “built-in”) numeric types int (four bytes) and long (eight bytes); for each of these the value is directly in the variable, with no references to anything else. The prefix 0x on a number is the syntax in many programming languages, including Java, for hexadecimal integer literals; writing the numbers this way makes it clear how many bits each is represented with. Every bit in each of these types (and all primitive types) is part of the representation of the number, and there’s no room for a distinguished null bit pattern; hence, primitive types do not include null as a value.
+
+The other four variables have reference types, of which there are two subdivisions, object types and array types. Variables c and d both have the object type Posn. (Assume a class with two int fields x and y.) Java variables cannot hold objects directly—objects are compound data structures—so instead they must hold a reference5 to an object. Variable c contains a reference to a Posn object, so that, for example, c.x == 3. Note that the fields of an object are a kind of variable, which means that they, too, can hold only primitives or references, not actual objects. Variable d currently does not hold a reference, so its value is null, which is a distinguished value that indicates the absence of a reference.
+
+Variables e and f have array types, which means that each hold a reference to an array (or null), not the array itself. Whereas e refers to an array of primitive int values, f refers to an array of Posn object references. Three of the four elements contain references to Posn objects, and the fourth contains null. Note that while there are only two Posn objects in the diagram, there are four Posn object references—multiple references can point to the same object. (This is aliasing as discussed in the array section above.)
+
+The reasons why objects and arrays need to be accessed via references is that their types do not determine how much space they take up. In particular, an array type int[] does not determine the length of the array, and object type Posn could include subclasses with additional fields.
+
+6.1.1 All the primitive types
+In total, Java has eight primitive types that can be the immediate values of variables:
+
+These have different sizes, which means that variables have different sizes. But each one has a known size, and each is a single value rather than some combination of values.
+
+6.1.2 Boxed types
+Every primitive type in Java has a corresponding object type: int has Integer (doc), char has Character (doc), double has Double (doc), and so on. (Only Integer and Character have names that differ in more than their capitalization from their primitive counterparts; the other six are the same except for the capitalized first letter.)
+
+In each case, the uppercase object type is a class with a field containing the corresponding lowercase primitive type. For example, let’s compare the short primitive type with the Short object type:
+
+
+
+Variable g of type short contains a short value directly. Compare this to variable h of type Short, which contains a reference to a Short object that has a field containing its value. Variable i also has type Short, but instead of containing a reference to an object, it contains null. Note that short cannot be null but Short can, double cannot be null but Double can, and so on for the other six boxed types.
+
+Variable j contains a reference to any array of primitive short values, which are stored directly in the array. Variable k is reference to an array of Shorts, that is, an array of object references.
+
+Note that these types are boxed because each is a reference to a box (object) containing the primitive type. For the most part, you shouldn’t have to convert between primitive types and their object versions, because Java automatically inserts box and unbox operations where needed.
+
+6.2 How can we use them?
+You have been, and for the most part you know how. But there’s one thing worth knowing about that you may not: How to perform Object operations such as equality and hashing.
+
+7 Equality: physical and logical
+Equality seems like such a simple proposition: two things are either “the same” or they aren’t. Except of course the preceding sentence has two key terms left undefined: “things” and “sameness”. Now that we have a clearer picture of the difference between reference types and value types, there are clearly two different kinds of things: things that contain an arrow, or things that don’t. We therefore have to refine our notion of sameness: For value types, there’s really only one thing to be done: compare the values themselves and see if they are equal. But for references:
+
+We can see if the arrows point to exactly the same place. This check is what the == operator performs.
+We can “follow the arrows” and recursively compare the data they refer to for sameness.
+The first one checks “physical” equality (do these two things refer to the same object?) and the second one checks “logical” equality (do these two things refer to objects that are equivalent to each other, even though they may be physically different objects?).
+
+In Fundies 2, we called these notions “intensional” and “extensional” equality. They mean the same thing as “physical” and “logical” equality, except we didn’t need to know exactly how references worked in order to define them!
+
+How can we check and define equality between objects? Java defines the boolean equals(Object other) method, on the Object class, so that any two objects can be compared. By default, this operation is defined as
+
+boolean equals(Object that) { return this == that; }
+so that the default operation is simply intensional, physical equality. However we are free to override this method on our own classes, so that instances of our classes can support logical equality instead. In order to do this, we first decide what it means for two objects to be “equal” to each other. Then we write the equals method accordingly.
+
+In many cases logical equality of two objects involves checking some or all of their fields for equality. If these fields are themselves objects, we recursively check their equality using their equals methods, and so on. However logical equality can be more sophisticated than merely comparing fields for equality. Consider a Fraction class:
+
+final class Fraction {
+  private final int num, den; // represents the number (num/den)
+  ...
+  @Override
+  public boolean equals(Object obj) {
+    if (!(obj instanceof Fraction)) return false;
+    Fraction that = (Fraction)obj;
+
+    return this.num == that.num && this.den == that.den; // Oops!
+  }
+}
+
+assertEquals(new Fraction(1, 2), new Fraction(1, 2)); // good...
+assertEquals(new Fraction(1, 2), new Fraction(2, 4)); // Fails!
+There are multiple ways of representing the “same” fraction, so we need a more general equivalence:
+
+@Override
+public boolean equals(Object obj) {
+  if (!(obj instanceof Fraction)) return false;
+  Fraction that = (Fraction)obj;
+
+  return this.num * that.den == that.num * this.den;
+}
+Now both tests above pass.
+
+7.1 Equality and autoboxing
+Comparing an object to a primitive value seems like a silly thing to do: of course they can’t ever be equal, right? But in the presence of generics (see Generics below), Java will automatically box primitives into their boxed object forms. And at that point, looking for, say, an int in a List<Integer> makes a lot of sense. Accordingly, Java ensures that the equals method on box types coincides with the == operation on the primitive values: if any two values are ==, their boxed forms are equals():
+
+long val_x1 = 7L;
+long val_x2 = 7L;
+
+Long box_x1 = 7L;
+Long box_x2 = 7L;
+
+assertTrue(val_x1 == val_x2); // primitive equality
+assertTrue(box_x1.equals(box_x2)); // logical equality of boxes
+assertTrue(box_x1.equals(val_x1)); // logical equality with auto-boxing
+Unfortunately, the == operator will not perform the same way for box types as it does for primitives. Consider: there are a lot of 64-bit long numbers, so allocating an object for each one is exorbitantly expensive. So the following will occur:
+
+Long x1 = 7L;
+Long x2 = 7L;
+
+Long y1 = 720_233_830_121_456L;
+Long y2 = 720_233_830_121_456L;
+
+assertTrue ( x1.equals(x2) ); // for small enough numbers, Java
+assertTrue ( x1 == x2 ); // will ensure physical equality of boxed values
+
+assertTrue ( y1.equals(y2) ); // but when they get large enough,
+assertFalse( y1 == y2 ); // there is no such guarantee.
+Similar caveats apply for other primitive types. This behavior is documented, though it might be confusing at first. Stick to equals() whenever possible, to avoid this confusion.
+7.2 Equality and hashing
+Equality is intended to mean that two variables “behave the same” in any scenario we care about. This implies that any equality implementation had better respect the following three rules:
+
+Reflexivity: x.equals(x), always. (Unless of course x is null, in which case this crashes. See the notes on null below...)
+Symmetry: if x.equals(y), then y.equals(x), always.
+Transitivity: if x.equals(y) and y.equals(z), then x.equals.(z), always.
+(It should be apparent that == obeys these three rules too.)
+
+Java includes one additional scenario in which we can observe objects: we can stick them inside hash tables, in which case Java relies on the int hashCode() method. Hashcodes have to obey the following consistency rules with respect to equality:
+
+Compatibility: If x.equals(y), then x.hashCode() == y.hashCode(). Contrapositively, if x.hashCode() != y.hashCode(), then !x.equals(y).
+Non-injectivity: Just because x.hashCode() == y.hashCode() doesn’t imply that x.equals(y). Contrapositively, just because !x.equals(y) doesn’t mean that x.hashCode() != y.hashCode().
+In other words, the point of a hashcode is to quickly decide when two objects are not equal. If that quick check can’t tell them apart, then the full equals() method is needed.
+
+Always override hashCode when you override equals, or you’re practically guaranteed to violate these rules.
+
+As corollary of these rules, the hashCode() method should be a function of only the same fields that are used by equals() — or else it’s trivial to violate compatibility. (Consider an implementation of Posn whose equals() method only checked its x-coordinate, but whose hashCode() method used its y-coordinate as well.)
+
+Fortunately, Java provides several static methods to make constructing hash codes simple. In particular, each of the box types provides a static hashCode method, as shown here for doubles:
+
+double val_x = 314.1592;
+Double box_x = 314.1592;
+
+assertTrue(box_x.hashCode() == Double.hashCode(val_x));
+This takes care of most individual fields or variables. Additionally, there is a utility class named Objects that includes a convenience method
+
+int hash(Object... args):
+
+final class Posn {
+  private final int x, y;
+  ...
+  @Override
+  public int hashCode() {
+    return Objects.hash(x, y); // boxes x and y to Integers,
+    // then gets their hashCode()s, and combines them into a single result
+  }
+}
+The actual mathematics of good hash functions are an interesting sub-domain of algorithms; for our purposes, it’s enough to know Java has good built-in defaults that we can use as needed.
+
+Of course, if our particular equality operation is more sophisticated than simply comparing fields, then this hashing approach won’t work. In particular, if we used the same approach for Fraction as we just used for Posn,
+
+assertEquals(new Fraction(1, 2).hashCode(),
+             new Fraction(2, 4).hashCode()); // Fails
+We need a hashcode that respects our equality relation. (Try implementing this one!)
+
+8 A Nuanced View
+In this section we review some programming practices that have been previously banned/shunned, but can be meaningful if used judiciously.
+
+8.1 null is bad
+Not entirely true. More accurately, null is a pain to deal with. null simply means “absence of an object”. Since there is no object, using a variable that is null to call any methods results in a NullPointerException. This is more likely to happen when null is used to signify something (instead of nothing as it is supposed to). A classic example of such usage is null to signal the end of a linked list. An implementation using a sentinel (a last bogus object that only means the end) avoids this pitfall. Thus in many cases the use of null can be avoided.
+
+One of the few good use cases for null is when intending to create cyclic data. Here, use null to indicate that the cycle hasn’t been formed; document well by what point the cycle should be formed, and check for it early and fail quickly if an unexpected null value appears.
+
+Nuanced advice: Use null only to mean “no object exists” and use sparingly only in this context.
+
+8.2 == is bad
+Not exactly. With our more sophisticated understanding of the distinction between value types and reference types, just remember that == compares the immediate contents of variables and so provides physical equality comparisons.
+
+Nuanced advice: Use this operator sparingly, recalling how it works. For reference types, use equals in most contexts.
+
+8.3 instanceof and casts are bad
+The instanceof operator is used to determine if a given object has a specific type. This operator is overused to determine if the object can be used to call certain methods (in general, if the object has a specific functionality). This problem can be solved by designing the code better to exploit dynamic dispatch (letting the language determine which method to call, based on which object it has at runtime).
+
+instanceof is useful in some specific situations, such as when overriding equals.
+
+Nuanced advice: When you are contemplating determining the type of an object, think about whether you can avoid that by use of dynamic dispatch. Use instanceof only when you can justify that knowing the type of an object is critical to what you are doing.
+
+9 Enumerations
+An enumeration is a finite collection of values, all of which are known statically, and can therefore be given names. Enums are most useful when the set of values is reasonably small, and when each value’s behavior is uniformly the same.
+
+9.1 Simple enumerations
+A simple enumeration looks like this:
+
+enum TrafficLight { Red, Yellow, Green }
+Under the covers, this actually defines a class named TrafficLight, a private constructor and three static fields. In other words, it’s effectively producing the following:
+
+final class TrafficLight {
+  private TrafficLight() { }
+  public static final TrafficLight Red = new TrafficLight();
+  public static final TrafficLight Yellow = new TrafficLight();
+  public static final TrafficLight Green = new TrafficLight();
+}
+Because the constructor is private and the class is final, these three final fields are the only possible non-null values of this type. As a consequence, you can check which enum value you have using the == operator:
+
+TrafficLight nextLight(TrafficLight cur) {
+  if (cur == TrafficLight.Red) {
+    return TrafficLight.Green;
+  } else if (cur == TrafficLight.Yellow) {
+    return TrafficLight.Red;
+  } else if (cur == TrafficLight.Green) {
+    return TrafficLight.Yellow;
+  } else {
+    throw new IllegalArgumentException("Bad traffic light");
+  }
+}
+Java allows you to use the switch statement for enums, which would be more idiomatic than the above code.
+
+9.2 Predefined methods on enums
+Like all classes, enums come equipped with toString method. The default implementation for enums is more useful than for other objects: it displays each value exactly as its name: for example, TrafficLight.Yellow.toString() equals "Yellow".
+
+Java also defines an “inverse” function from toString: the static method valueOf essentially produces enum value from its name: you can write TrafficLight.valueOf("Red") to obtain TrafficLight.Red. This method is case-sensitive and not tolerant of any typos: if you try TrafficLight.valueOf("green") or TrafficLight.valueOf("weird"), it will throw an IllegalArgumentException.
+
+Lastly, Java defines a static method values on each enum, that returns an array of the values of the enum. In our example, TrafficLight.values() would produce new TrafficLight[]{ TrafficLight.Red, TrafficLight.Yellow, TrafficLight.Green }. This can be particularly useful in combination with a for-each loop, to process all possible values of an enum in a uniform manner.
+
+9.3 More elaborate enumerations
+Sometimes we would like to associate other values with a given enumerated value. For example, we can refer to the coins in the US currency as “penny”, “nickel”, “dime” and “quarter”. But each of them also have a numeric monetary value (1, 5, 10, 25 respectively). What if we wanted to refer to them by name, but also perform arithmetic on their numeric values?
+
+Java allows us to associate values with enums, as the code snippet below shows.
+
+enum UsCoin {
+  // Define each named value, passing an argument into the constructor
+  Penny(1), Nickel(5), Dime(10), Quarter(25);
+  // semicolon is needed to separate the declarations above
+  // from the fields and methods below
+
+  // Define some fields:
+  private final int value;
+  // Define the constructor
+  UsCoin(int value) { this.value = value; }
+
+  // Define some methods
+  public int getCentsValue() { return this.value; }
+  @Override
+  public String toString() { return String.format("%d¢", this.value); }
+}
+We create a placeholder to store the numeric value associated with a given enum (private final int value). We take care to make it private because we do not want the association of an enum to its numeric value to change (e.g. a dime should always remain 10 cents). We would create an enum value the same way as before: UsCoin s = UsCoin.Dime;. However this results in Java employing the constructor above to associate the numeric value 10 with s. Because the constructor is strictly for internal use and never explicitly called when creating enums, we make it non-public. Since its numeric value is stored as an instance variable we can write methods that access it.
+
+10 The switch statement
+Often we wish to check if a given variable has specific values, and take action according to them. We can do this by using if/else if...else statements. Java provides a more convenient statement for this purpose: the switch statement.
+
+10.1 A simple switch statement
+We can modify the implementation of the nextLight in the above section as follows:
+
+TrafficLight nextLight(TrafficLight cur) {
+  switch(cur) {
+    case Red: return TrafficLight.Green;
+    case Yellow: return TrafficLight.Red;
+    case Green: return TrafficLight.Yellow;
+    default: throw new IllegalArgumentException("Bad traffic light");
+  }
+}
+The switch statement reads better in such cases. Because it is more brief than a sequence of if/else statements, it is often easier to debug.
+A switch statement simply states that the value being examined falls into one of several mutually exclusive cases. Switch statements may only be used with enum values, primitive values (mainly chars and ints) and (as of Java 7) String values.
+
+10.2 Fallthrough behavior
+Warning: the cases of a switch statement have fallthrough behavior. The case statement determines the entry point into a switch statement, but not an exit point.
+
+In the code below, the second case will match, and so will print "Got here"...
+
+void badSwitchExample() {
+  switch("Oops") {
+    case "Won't happen":
+      System.out.println("doesn't run");
+    case "Oops":
+      System.out.println("Got here");
+    case "Yay":
+      System.out.println("Hooray");
+    default:
+      System.out.println("Huh?");
+  }
+}
+...and then continue to print "Hooray" and "Huh?". Although each case seems to “end” as another case begins, the code will continue executing. If we want the switch statement to end at the end of a case statement, we must explicitly do so using a break statement.
+void goodSwitchExample() {
+  switch("Oops") {
+    case "Won't happen":
+      System.out.println("doesn't run");
+      break;
+    case "Oops":
+      System.out.println("Got here");
+      break;
+    case "Yay":
+      System.out.println("Hooray");
+      break;
+    default:
+      System.out.println("Huh?");
+      break;
+  }
+}
+The code above will only print "Got here". (The break statement is actually more general, and can be used to escape loops, if statements, etc., and essentially jump to the nearest closing brace. You cannot use break statements to escape from a method body, though; that remains an error.)
+10.3 Default cases
+Every switch statement must come with a default: case as its final case. This case is used when none of the other cases match the given value. For strings, characters and numbers, this makes sense: after all, there are a huge number of possible values for those types! For enums, it may seem weird, but remember that enum values are objects of a given class type, and null is unfortunately a potentially legal value of that type as well.
+
+11 Exceptions
+Let us look at the constructor of the Book class from Essence of Objects. What would happen if we used it as follows:
+
+Publication rushdie = new Book("Midnight's Children", "Salman
+Rushdie","Jonathan Cape", "London", -1980);
+We have attempted to create a Book object with a negative year. A negative year does not make sense in the given context. Java was not able to catch this error because -1980 is a valid number. Ideally the constructor should inform its caller “thou shall not pass me a negative number for the year,” instead of using the number and creating an object that has an invalid year of publication. Exceptions allow us to do that.
+
+An exception occurs when something unexpected happens, whether it be invalid input, an operation that cannot be completed (e.g. the square root of a negative number) or even something that is beyond our control (e.g. attempting to read from a file that no longer exists). Exceptions offer us a dignified way of aborting a method and sending a message to its caller that something went wrong.
+
+11.1 Writing a method with exceptions
+In the constructor, an exception should occur if a negative number is passed as the year of publication of the book. We can change its signature to the following:
+
+/**
+ * Constructs a {@code Book} object.
+ *
+ * @param title     the title of the book
+ * @param author    the author of the book
+ * @param publisher the publisher of the book
+ * @param location  the location of the publisher
+ * @param year      the year of publication
+ * @throws IllegalArgumentException if the year is negative
+ */
+public Book(String title, String author,
+            String publisher, String location, int year)
+            throws IllegalArgumentException {
+  if (year < 0) {
+    throw new IllegalArgumentException("Year of publication "+
+    "cannot be a negative number");
+  }
+  this.title = title;
+  this.author = author;
+  this.publisher = publisher;
+  this.location = location;
+  this.year = year;
+}
+Java has many kinds of exceptions. Since our problem here is an invalid argument, we use the IllegalArgumentException class.
+
+The method signature explicitly declares that it may throw an IllegalArgumentException object. A method can throw multiple types of exceptions, declared in its signature separated by commas. The Javadoc-style comments document this possibility.
+
+Before initializing the fields we check if the year passed to the constructor is negative and if so, we throw an exception. This involves creating an IllegalArgumentException object with a helpful message in it and throwing it.
+
+This method now works as follows:
+
+If the year is not negative, the constructor does not throw an exception and initializes the object, as before.
+If the year is a negative number, the method aborts on the line throw new IllegalArgumentException(...);. It will not return anything.
+A method may throw multiple types of exceptions, and it may declare some or all of them in its method signature.
+
+11.2 Calling methods that may throw exceptions
+Let us test this constructor, specifically by passing it a negative year. Whenever a method is called that may throw one or more exceptions we can enclose it in a try-catch block as follows:
+
+Publication rushdie;
+
+try {
+  rushdie = new Book("Midnight's Children", "Salman Rushdie",
+  "Jonathan Cape", "London", -1980);
+}
+catch (IllegalArgumentException e) {
+    //This will be executed only if an IllegalArgumentException is
+    //thrown by the above method call
+}
+Thus we try to call such a method, and if an exception is thrown we catch it. If no exception is thrown then the catch block is ignored.
+
+11.3 Checked and unchecked exceptions
+Java has two categories of exceptions: checked and unchecked. If there is a chance that a method may throw a checked exception (either using the throw clause or by calling another method that throws it) Java mandates that the method do one of two things. Either the method must catch the exception using a try-catch block, or it must explicitly declare in its method signature using a throws clause that it may throw this exception to its caller. This is not mandated for unchecked exceptions. IllegalArgumentException and ArrayIndexOutofBoundsException are examples of unchecked exceptions, whereas FileNotFoundException is a checked exception.
+
+If a method can throw an exception to its caller, it is a good idea to declare it explicitly in its signature using the throws clause irrespective of whether the exception is checked or not. This informs the client explicitly so that it may address it (e.g. by enclosing a call to this method in a try-catch block).
+
+More information about exceptions is available in the Java documentation.
+
+12 Generics, or raw types considered harmful
+12.1 What are they?
+In early versions of Java (prior to 1.5), programmers could not write a type that meant, “I represent a homogeneous list of items of the same type, regardless of that type.” Programmers instead had the dubious choice of implementing the “same” list classes over and over again (for numbers and strings and booleans and whatever other data types they needed), or they could write a list implementation once and declare the fields inside to contain Objects — and rely on instanceof and casting to trick the compiler into treating the data as having some particular type. This approach is quite obviously error-prone: since everything is a subtype of Object, anything could be placed into these lists whether or not they were uniform. Conversely, casting down from Object to some particular type defered any possible errors until runtime, rather than catching them at compile-time as desired.
+
+12.2 How can we use them?
+Instead of this mess, Java 1.5 introduced generic types. Programmers can now write
+
+interface List<T> {
+  T get(int index);
+  void set(int index, T newVal);
+  ...
+}
+
+class LinkedList<T> implements List<T> {
+  T first;
+  List<T> rest;
+  public T get(int index) {
+    if (index == 0) return this.first;
+    else return this.rest.get(index - 1);
+  }
+  public void set(int index, T newVal) {
+    if (index == 0) this.first = newVal;
+    else this.rest.set(index - 1, newVal);
+  }
+  ...
+}
+This interface describes homogenous lists whose elements are all of type T. The class LinkedList<T> asserts that implements this interface, regardless of the element type: it is generic enough to work for all possible types. We can also have a non-generic class that implements a generic interface for a particular type:
+
+class IntListLength3 implements List<Integer> {
+  int first, second, third;
+  ...
+}
+Just as we can have generic interfaces and classes, we also can have generic methods. For instance, we might add a map method to our list interface:
+
+interface List<T> {
+  ...
+  <U> List<U> map(Function<T, U> func);
+}
+This method says it can transform the current List<T> into a new List<U>, for any type U, as long as the user provides a function transforming Ts into Us. Note that this method is generic independently from the interface: contrast the signature above with the following, broken one:
+
+interface BrokenList<T, U> {
+  ...
+  BrokenList<U, ???> map(Function<T, U> func);
+}
+This second interface describes “lists with element type T that can be transformed into Us.” In other words, we would have to know both the element type and the future transformed element type at the moment we created the list, which rather defeats the purpose of such a generic method. Worse, we can’t even fill in the signature completely, since we don’t know what type our U-list can turn into!
+
+12.3 Nuances
+12.3.1 Mostly leaving out the type parameters — the “diamond operator”
+Writing out generic types rapidly gets unwieldy, since we have to write the type parameters twice:
+
+Map<String, Integer> myMap = new HashMap<String, Integer>();
+In most cases, Java can infer the type parameters for us on the right-hand side of this variable declaration, so we can leave them out:
+
+Map<String, Integer> myMap = new HashMap<>();
+This so-called “diamond operator” was added in Java 7, and helps enormously when the types get more intricate.
+
+Note that sometimes Java can’t figure out the type parameters for us. For example, there exists a static method <T> List<T> Arrays.asList(T... args) (see The static keyword?) and Arrays), that takes an arbitrary number of arguments and turns them into a List. There exists another static method, <T> void Collections.shuffle(List<T> list), that shuffles the elements in the given list. Trick question: what is the type T in the call Collections.shuffle(Arrays.asList())? Since there are no elements present, the compiler has nothing to use to guess the type parameter. In situations like this, we can manually specify the type argument: Collections.<Integer>(Arrays.asList()).
+
+Another case where Java occasionally guesses wrong is when the declaration on the left-hand side uses a supertype as the type parameter, but the right-hand side value uses only subtypes:
+
+List<Shape> shapes = Arrays.asList(new Circle(), new Circle());
+In cases like these, you will need to specify the type parameter manually, because Java will not accept a List<Circle> as a List<Shape> — see Generics and mutability below.
+
+12.3.2 Entirely leaving out the type parameters — “raw types”
+Because Java prior to 1.5 did not have generic types, and because Java emphasized backwards compatibility, you could technically write
+
+List shapes = new List();
+Don’t. Ever.
+
+You can actually configure IntelliJ to warn you about inadvertent uses of raw types, and make them be a compile-time error:6
+
+Go to File -> Settings.
+In the Settings dialog that pops up, navigate on the left to Editor -> Inspections.
+In the resulting window, type “raw” into the search bar on the right-hand side:
+
+
+Select the two items under Java, namely “Raw types can be generic” and “Raw use of parameterized class” (highlighted blue in the screenshot above). Check the checkboxes, and then in the Severity dropdown, choose Error for each one. Click ok.
+To make this the default for all new projects, repeat this process starting with File -> Other settings -> Settings for new projects.
+12.3.3 Wildcards
+In some circumstances, a library method might take in a parameter with a generic type, but nevertheless not depend on that type at all. For instance, consider writing a method to print out a list of values:
+
+<DontCare> void printList(List<DontCare> list) {
+  for (DontCare value : list) {
+    System.out.println(value.toString());
+  }
+}
+Here, we’re only using methods that come from Object, so we really don’t care what the actual element type of the list is. However, we can’t say List<Object>, because then we wouldn’t be able to pass in lists of anything other than objects (again, see below). So we’re forced to mention a type parameter, but we don’t need to use it. In cases like these, Java will let us use the question-mark as a type parameter instead:
+
+void printList(List<?> list) {
+  for (Object value : list) {
+    System.out.println(value.toString());
+  }
+}
+Question marks are slightly less precise than type parameters, though. Suppose we had a method <T> List<T> copy(), that cloned the current list. Then the following two methods are different in meaning:
+
+List<?> copyAndReverse1(List<?> list) {
+  List<?> dupe = list.copy();
+  dupe.reverse();
+  return dupe;
+}
+
+<T> List<T> copyAndReverse2(List<T> list) {
+  List<T> dupe = list.copy();
+  dupe.reverse();
+  return dupe;
+}
+
+List<Integer> nums = ...;
+List<Integer> broken = copyAndReverse1(nums);
+List<Integer> works  = copyAndReverse2(nums);
+The broken case fails because we’ve lost the connection between the input argument type and the output type. The final case works because the generic types are preserved through the whole snippet of code.
+
+Question marks seem rather esoteric, but they’re useful in the following circumstances.
+
+12.3.4 Generics and mutability
+Let’s examine a list of shapes again, and let’s sort the list by area. Surely, this sorting method would work for lists of all shapes, or lists of only circles, or lists of only squares, etc. However, the following code will not compile:
+
+void sortShapes(List<Shape> shapes) { ... }
+
+List<Circle> circles = ...
+sortShapes(circles);
+Java will complain that a List<Circle> is not a List<Shape>, and rightly so! Suppose we wrote the following malicious code:
+
+void bad(List<Shape> shapes) {
+  shapes.add(new Square(...));
+}
+
+List<Circle> circles = ...
+
+bad(circles);
+Because of aliasing and mutation, our bad method has managed to sneak a Square into a list of only circles. If the code then tried to get the radius of that “circle”, it would crash, since that shape really isn’t a circle at all. In order to prevent this, Java is forced to say that treating a List<Circle> as a List<Shape> is prohibited.
+
+But what about our sorting function? It clearly should work, and part of the reason why is that it doesn’t construct arbitrary new shapes and mutate the list to contain them: it only rearranges things that were already in the list. So we’d like to say that the sorting method for lists of anything that’s a subtype of Shape, which we can do as follows:
+
+void sortShapes(List<? extends Shape> shapes) { ... }
+This new “? extends Shape” syntax, called a bounded generic type lets us read from the list and know that it must be a Shape, but it doesn’t let us put anything new into the list, because the actual element type of the list is just a question mark.
+
+Actually attempting to write this sorting method, though, is tricky: we need to iterate over the list, but we don’t know what type the elements are. So we can use another variant of this bounded generic type, as follows:
+
+<S extends Shape> void sortShapes(List<S> shapes) {
+  for (int i = 0; i < shapes.length(); i++) {
+    S shape_i = shapes.get(i);
+    for (int j = i + 1; j < shapes.length(); j++) {
+      S shape_j = shapes.get(j);
+      if (shape_j.area() < shape_i.area()) {
+        shapes.put(i, shape_j);
+        shapes.put(j, shape_i);
+      }
+    }
+  }
+}
+This example demonstrates a lot of nuanced type behavior. We create a type variable, S, and say that it is definitely some subtype of Shape. This permits us to call the area methods later on. Additionally, the two calls to put succeed because we know that our list contains a bunch of S values, and the only way we can get such values is by reading them from the list in the first place, so we can put those values back into the list.
+
+However, we cannot create new shapes from scratch here, because writing something like new S() is meaningless: S isn’t the name of any class!
+
+In a very real sense, this use of extends allows us to create read-only generic types. There is a dual notion to extends, that allows us to create write-only generic types. For instance, the following code will work:
+
+void blowBubbles(List<? super Circle> output) {
+  for (int i = 0; i < 10; i++) {
+    output.add(new Circle(i));
+  }
+}
+Now we can add a bunch of circles to a List<Circle> easily enough, but we can also add them to a List<Shape>, since Shape is indeed a supertype of Circle. We could even add circles to a List<Object>. However, we cannot read out any elements from this output list and call methods on them, because we don’t know what their actual classes are. In particular, we cannot for example call the radius method on this List<? super Circle>, because not everything in the list is guaranteed to be a Circle. We can’t even call the area method, because they might not even all be Shapes!
+
+Using wildcards and bounded generics is definitely an advanced skill, and one that is only needed occasionally — but when it’s useful, it’s indispensable! The primary design choice to make, from the outset, is whether you plan to read from a generic data source, or write to one, or both.
+
+13 JUnit
+13.1 Review: the tester library
+Coming from Fundies 2, you already are familiar with using the tester library to write test cases: something like
+
+class ExamplesWhatever {
+  // various fields of data
+  int someData;
+  Foo aClassThatThrows;
+  void setupTestFixture() {
+    // reinitialize all your data
+    this.someData = 5;
+    this.aClassThatThrows = new Foo(5);
+  }
+  // old-style test method
+  boolean testSomething(Tester t) {
+    this.setupTestFixture();
+    return t.checkExpect(this.someData, 5, "Is it five?")
+        && t.checkConstructorException(new IllegalArgumentException("No tens!"),
+                                       "Foo",
+                                       10)
+        && t.checkException(new RuntimeException("Boom"), this.aClassThatThrows, "explode");
+  }
+  // new-style test method
+  void testSomething(Tester t) {
+    this.setupTestFixture();
+    t.checkExpect(this.someData, 5, "Is it five?");
+    t.checkConstructorException(new IllegalArgumentException("No tens!"),
+                                "Foo",
+                                10);
+    t.checkException(new RuntimeException("Boom"), this.aClassThatThrows, "explode");
+  }
+}
+A test class needs to accomplish several things:
+
+It must correctly reinitialize a test fixture to ensure every test runs in a consistent environment (especially when mutation is involved);
+It must be able to test whether some expression evaluates as expected;
+It must be able to check for exceptions that occur in constructing objects;
+And it must be able to check for exceptions that occur in method invocations.
+The tester library in Fundies 2 provided a simplified API for such activities. In this course, we’ll introduce you to JUnit, the widely-used standard library for such things, and the support for it that’s built into IntelliJ. This isn’t quite a language feature—JUnit is still a library—but it is better integrated into the language and its tooling than the tester library was.
+
+We translate the sample tests above into JUnit, then explain each feature:
+
+import org.junit.*; // used to define @Test and @Before, etc.
+import static org.junit.Assert.*; // used for assertEquals and assertTrue, etc.
+
+class MyTestClass {
+  // various fields of data
+  int someData;
+  Foo aClassThatThrows;
+  @Before
+  void setupTestFixture() {
+    // reinitialize all your data
+    this.someData = 5;
+    this.aClassThatThrows = new Foo(5);
+  }
+
+  @Test
+  void simpleTest() {
+    assertEquals("Is it five"? 5, this.someData);
+  }
+  @Test(expected = IllegalArgumentException.class)
+  void constructorExceptionTest() {
+    new Foo(10);
+  }
+  @Test(expected = RuntimeException.class)
+  void methodExceptionTest() {
+    this.aClassThatThrows.explode();
+  }
+}
+13.2 Simple tests
+The first thing to notice is the two import statements at the top; these are needed to define the assertions and annotations used by JUnit tests.
+
+Second, JUnit does not impose any naming convention ("ExamplesBlah", "testWhatever"). Instead, we simply mark our test methods with the @Test attribute.
+
+The analogue of t.checkExpect is simply assertEquals. Its arguments are in exactly the reversed order from the tester library’s order: first, an optional description of the test case, followed by the expected value of the test, and finally the actual value. (Technically, the first argument isn’t optional; rather, there are several overloaded assertEquals methods, of which only some include the description string.)
+
+The assertEquals testing form compares its arguments using their .equals method. Keep this firmly in mind, as it is quite different from the tester library. That library provided a structural equality comparison by default, because we were using it before we’d defined how equality actually worked. Here, now that we know the distinctions between == and .equals, JUnit doesn’t impose any particular regimen on us; it’s up to us to define what we mean.
+
+Among other things, look again at the notes about comparing arrays for equality above. Because arrays are not objects, they do not have a .equals method, so JUnit provides a customized assertArrayEquals method for comparing arrays for equality element-by-element, rather than by aliasing.
+
+13.3 Test fixtures
+Writing a test fixture is still our responsibility. However, rather than having to remember to call it manually in every test method, we simply mark the test fixture with @Before. JUnit will call it for us automatically before each @Test method.
+
+13.4 Testing for exceptions
+The tester library had some rather ungainly mechanisms for testing exceptions: we passed in the exact exception we expect, followed by either the name of the class or the object and the name of its method, followed by the arguments to be passed in to the constructor or the method. (We couldn’t explain at the time, but checkConstructorException and checkException both accepted a varargs list of arguments...) This was particularly annoying if there was a typo in the method name, or a type error in the parameters passed in, as there was no compile-time checking to let us know of our mistake.
+
+JUnit has a much simpler mechanism. We elaborate the annotation before the method with the expected exception’s class:
+
+@Test(expected = IllegalArgumentException.class)
+and then simply invoke the constructor or method as normal. The JUnit framework will wrap every test method in a try-catch statement, and check that an exception is indeed thrown and that its class exactly matches the one specified. This means we need to get the exception exactly correct, no subclassing permitted here, but we don’t have to worry about the precise error message itself, and the same technique works for exceptions thrown both by constructors and by methods. JUnit has additional mechanisms for checking exceptions, but this is the simplest and easiest to use.
+
+Note that this mechanism implies that testing will stop at the first exception thrown in each test method, because throwing exceptions short-circuits evaluation (much like how a single test failure short-circuited tests in the tester library, in the old-style boolean test methods). If you want to test multiple exceptions, you must write multiple test methods: one per exception. Or, you can write your own try-catch statements, and write an assertEquals in the catch block that examines the exception object...but this is error-prone to forgetting that if the catch blok doesn’t run then the test should have failed. The common case is simply to write multiple test methods.
+
+(In hindsight, we can see why the tester library needed to be implemented the way it was: at the time, we didn’t have try-catch statements. Since the tester library was implemented entirely via methods on the Tester class, such methods would not have the ability to catch exceptions that were thrown during the evaluation of their arguments. Hence, we passed in the names of the things to be evaluated by the tester on our behalf, and internally it would use a try-catch statement to handle the exceptions. JUnit uses a different mechanism, namely method annotations, that allow it to effectively insert the try-catch statements around every method for us, leading to the cleaner API.)
+
+1When the array gets very large, this may not be entirely true due to practical memory considerations.
+
+2Note that List is an interface, and the venerable ArrayList is one class that implements it.
+
+3There’s a twist, though: some methods, such as String.indexOf(int), take “characters” represented as type int rather than type char, because it turns out that the Java char type doesn’t have enough bits to represent every Unicode code point. However, because chars are implicitly converted to ints, you can use a character where an integer is expected with no trouble. (In the other direction it requires a cast, which is lossy because some int values don’t fit in char)
+
+4Not just variables, because everything below applies to method parameters and results as well.
+
+5What is a reference? Most likely it’s just the memory address of the object, like a pointer in C or C++—though there are optimizations that can make the situation less simple.
+
+6I do not know why this isn’t the default! It should be.

@@ -1,0 +1,28 @@
+Lecture 11: The Perils of Inheritance
+Java source (.zip)
+Overview of the lecture
+This lecture compares inheritance and composition as two ways to reuse existing code. Many solutions to design problems can be loosely framed as replacing one of these ways with the other.
+
+The IntSet interface is a simplified API for working with sets of integers—it has nearly the bare minimum of methods. Now, suppose we wanted to instrument an IntSet to find out how many times elements are added (which isn’t the same as the size). The InstrumentedIntSet interface extends IntSet with an additional operation, which lets the client find out the count of add operations.
+
+Now, suppose we wanted to implement InstrumentedIntSet based on an existing IntSet implementation that someone else wrote and maintains (IntSet1, in this case—no peeking), and that we don’t want to look at or mess with. The InstrumentedIntSet1 class is our first attempt to do this by inheriting from IntSet1 and overriding the relevant methods to have them count as well. This looks good, but when we test it (see InstrumentedIntSetTest), we find that one of the tests fails.1 Why do the tests fail? You may need to look at IntSet1 to figure it out.
+
+Once we’ve figured out why they fail, we give it another go with the InstrumentedIntSet2 class, which compensates for what was going on in our first attempt. If InstrumentedIntSet2 extended IntSet1, the same IntSet implementation as before, it would pass the tests. Alas! Unbeknownst to us, the maintainer of IntSet1 decided to tweak the implementation in a (supposedly) innocuous way, and that change having cancelled out our compensation, InstrumentedIntSet2 also fails one of the tests. Again, can you see why? Here’s IntSet2 in case you need it.
+
+The next two versions show two different solutions to our problem.
+
+In IntSet3, the author made a defensive change so that subclasses cannot interfere with how its own methods are implemented. This looks substantially the same as IntSet2 from the outside, but there are actually two substantive changes:
+
+Instead of duplicating the (admittedly tiny) code between add() and addAll(), IntSet3 factors that out into a private method that subclasses can’t touch.
+IntSet3 is properly documented for extension, which means that InstrumentedIntSet3 can now safely extend it, knowing (because it’s documented!) that overriding IntSet3’s methods won’t screw things up.
+The IntSet4 class takes an even more conservative approach: IntSet4 is final, which prohibits extension altogether. This is almost always the right thing to do when you write a class: unless you are designing and documenting for extension, make the class final. That way, no clients of your class can depend on implementation details leaking out via inheritance, as happened with IntSet1 and IntSet2.
+
+Making IntSet4 final poses a problem for implementing InstrumentedIntSet4, because it can no longer use subclassing to just override some methods and silently inherit the others. So instead, InstrumentedIntSet4 takes a different tack: the delegate pattern. Instead of inheritance, it uses object composition, which means that it has a field holding the IntSet object that it wants to instrument. Then InstrumentedIntSet4 forwards method calls to the delegate rather than handling them itself, adding the instrumentation functionality where needed:
+
+The delegate pattern
+
+A disadvantage of this approach is inconvenience, since it now requires writing a stub for every method, even those that we formerly inherited unchanged. But an advantage of object composition is increased flexibility, because InstrumentedIntSet4 can take an object of any IntSet implementation in its constructor and delegate to that rather than fixing one IntSet implementation to inherit from.2 This flexibility is demonstrated by the test classes Test1Using1 through Test1Using4 at the bottom of InstrumentedIntSetTest.
+
+1InstrumentedIntSetTest uses the factory method–based abstract testing approach that we saw early on in the course. The tests for different InstrumentedIntSet implementations are always the same, and we extend the abstract base class eight times to test our different attempts at implementing InstrumentedIntSet.
+
+2It could even change the delegate dynamically if that’s what we wanted.

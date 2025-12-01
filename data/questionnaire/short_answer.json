@@ -1,0 +1,220 @@
+{
+  "metadata": {
+    "type": "short_answer",
+    "count": 30,
+    "difficulty": "challenging",
+    "topics_covered": ["adapter", "observer", "mvc", "decorator", "strategy", "command", "factory", "inheritance", "composition", "testing"]
+  },
+  "questions": [
+    {
+      "id": "sa_001",
+      "topic": "adapter",
+      "question": "Explain why an object adapter is necessary when adapting an existing Enumeration-implementing class to the Iterator interface, rather than using a class adapter.",
+      "expected_answer": "Since the Enumeration-implementing class already exists and cannot be modified, we cannot make it extend an adapter class. An object adapter wraps instances of the existing class through composition, delegating hasNext() to hasMoreElements() and next() to nextElement(), without requiring changes to the adaptee's class hierarchy.",
+      "key_concepts": ["cannot modify existing class", "composition over inheritance", "wrapping instances", "delegation"]
+    },
+    {
+      "id": "sa_002",
+      "topic": "adapter",
+      "question": "In a two-way adapter implementing both IntSet1 and IntSet2 interfaces, explain how the add(int value) method from IntSet1 can be implemented using only IntSet2 operations.",
+      "expected_answer": "The add(int value) method can be implemented by calling adaptee.unionWith(IntSet2Impl.singleton(value)). This creates a singleton set containing just the value to add, then unions it with the existing set. The unionWith operation adds all elements from the parameter set to this set.",
+      "key_concepts": ["singleton creation", "unionWith operation", "translating single-element to set operations"]
+    },
+    {
+      "id": "sa_003",
+      "topic": "adapter",
+      "question": "What is the appropriate way to implement the remove() method when adapting Enumeration to Iterator, and why?",
+      "expected_answer": "Throw UnsupportedOperationException because Enumeration has no concept of removal - it only supports hasMoreElements() and nextElement(). The Iterator interface documentation specifies that remove() may throw this exception when the underlying structure doesn't support removal. The default implementation in Iterator already throws this exception.",
+      "key_concepts": ["UnsupportedOperationException", "Enumeration lacks removal", "documented failure mode", "default method"]
+    },
+    {
+      "id": "sa_004",
+      "topic": "mvc",
+      "question": "Explain why a TicTacToeConsoleController constructor should accept Readable and Appendable parameters rather than directly using System.in and System.out.",
+      "expected_answer": "Accepting Readable and Appendable enables dependency injection, allowing the controller to be tested without actual console I/O. Tests can pass StringReader with predetermined input and StringBuilder to capture output, enabling automated verification of controller behavior. This decouples the controller from specific I/O implementations.",
+      "key_concepts": ["dependency injection", "testability", "StringReader/StringBuilder for testing", "decoupling"]
+    },
+    {
+      "id": "sa_005",
+      "topic": "mvc",
+      "question": "In MVC, what is the responsibility of each component (Model, View, Controller) in handling a user clicking a cell in a graphical TicTacToe game?",
+      "expected_answer": "Controller: Receives the click event from the View, translates pixel coordinates to board position (row, col), validates the move is legal, and calls the Model's move method. Model: Updates game state (board, current player, win condition), notifies observers of state change. View: Observes Model changes and repaints the board to reflect the new state, without direct Controller involvement in display updates.",
+      "key_concepts": ["Controller handles input translation", "Model holds state and logic", "View observes and displays", "separation of concerns"]
+    },
+    {
+      "id": "sa_006",
+      "topic": "mvc",
+      "question": "Why should a Controller catch IOException from Appendable.append() and throw IllegalStateException instead of propagating the IOException?",
+      "expected_answer": "IOException is a checked exception that would force all callers to handle I/O failures, which is inappropriate for game logic. An IOException during output represents an unrecoverable state (output stream failed), so wrapping it in IllegalStateException (unchecked) signals that the program cannot continue normally. This keeps the Controller's interface clean while properly signaling catastrophic failure.",
+      "key_concepts": ["checked vs unchecked exceptions", "unrecoverable state", "clean API", "appropriate exception translation"]
+    },
+    {
+      "id": "sa_007",
+      "topic": "observer",
+      "question": "Describe a scenario where the Observer pattern can lead to infinite recursion, and how this can be prevented.",
+      "expected_answer": "If an Observer's update() method modifies the Subject it's observing, and that modification triggers notifyObservers() again, infinite recursion occurs. Prevention strategies include: using a flag to track if notification is in progress and skipping re-notification, queuing changes to be processed after current notification completes, or designing observers to not modify subjects during updates.",
+      "key_concepts": ["update modifies subject", "recursive notification", "re-entrancy guard", "deferred modification"]
+    },
+    {
+      "id": "sa_008",
+      "topic": "decorator",
+      "question": "Explain how Swing's JScrollPane demonstrates the Decorator pattern and why this design is beneficial.",
+      "expected_answer": "JScrollPane wraps another component (like JPanel) and adds scrollbar functionality while delegating core behavior to the wrapped component. Benefits include: composition over inheritance (any JComponent can be scrolled), multiple decorators can be combined (JScrollPane around JBorderPane around JPanel), and single responsibility (each decorator adds one feature). The wrapped component doesn't need to know it's being decorated.",
+      "key_concepts": ["wrapping component", "adding functionality", "delegating core behavior", "composability"]
+    },
+    {
+      "id": "sa_009",
+      "topic": "decorator",
+      "question": "What distinguishes the Decorator pattern from simple inheritance, and when would you choose Decorator over subclassing?",
+      "expected_answer": "Decorator uses composition: a decorator implements the same interface as the component and holds a reference to a component instance, forwarding calls while adding behavior. Unlike inheritance, decorators can be combined dynamically at runtime, can wrap any implementation of the interface, and avoid class explosion from combinatorial feature combinations. Choose Decorator when features should be composable or when you can't modify the class hierarchy.",
+      "key_concepts": ["composition vs inheritance", "dynamic combination", "interface-based wrapping", "avoiding class explosion"]
+    },
+    {
+      "id": "sa_010",
+      "topic": "strategy",
+      "question": "Design a TicTacToeStrategy interface for implementing different AI move-selection algorithms. What parameters should the strategy method receive and why?",
+      "expected_answer": "Interface should have: Coord chooseMove(TicTacToeModel model, Piece forWhom). The model parameter provides access to board state (which cells are occupied, whose turn it is, if game is over). The forWhom parameter specifies which player the strategy is choosing for, necessary because the same strategy instance might be used for both players or we need to evaluate from a specific player's perspective.",
+      "key_concepts": ["board state access via model", "player identification via Piece", "strategy doesn't hold state", "reusable across players"]
+    },
+    {
+      "id": "sa_011",
+      "topic": "strategy",
+      "question": "How does the Strategy pattern relate to 'function objects' in Java, and how might lambdas simplify strategy implementation?",
+      "expected_answer": "Strategy pattern encapsulates an algorithm in an object - the object represents a function/behavior. In Java, a strategy interface with a single method is a functional interface, so strategies can be implemented as lambdas. Instead of creating a CornerStrategy class, you can write: (model, piece) -> findCornerMove(model). This reduces boilerplate while maintaining the pattern's flexibility.",
+      "key_concepts": ["algorithm as object", "functional interface", "lambda implementation", "reduced boilerplate"]
+    },
+    {
+      "id": "sa_012",
+      "topic": "command",
+      "question": "In a turtle graphics application, explain how the Command pattern enables implementing an undo feature for turtle movements.",
+      "expected_answer": "Each turtle action (move, turn) becomes a Command object storing the action and parameters. Before execution, the Command stores the turtle's current position/heading. Execute() performs the action, undo() restores the saved state. A command history stack maintains executed commands. Undo pops the last command and calls its undo(), which restores the turtle's previous state. Multiple undos work by continuing to pop and undo.",
+      "key_concepts": ["encapsulate action with state", "store pre-execution state", "command history stack", "undo restores state"]
+    },
+    {
+      "id": "sa_013",
+      "topic": "command",
+      "question": "Compare the save()/restore() methods on a SimpleTurtle (using position/heading stacks) with the Command pattern. Are they the same pattern?",
+      "expected_answer": "They are different patterns. save()/restore() implements a Memento-like pattern - saving complete state snapshots to a stack and restoring them. Command pattern would encapsulate each move/turn as an object with execute/undo methods. Save/restore saves checkpoints regardless of what operations occurred; Command tracks individual operations. They can complement each other but serve different purposes.",
+      "key_concepts": ["Memento vs Command", "state snapshot vs operation history", "complementary patterns", "different granularity"]
+    },
+    {
+      "id": "sa_014",
+      "topic": "inheritance",
+      "question": "Explain the 'fragile base class problem' using the example of InstrumentedIntSet extending IntSet, where both have add() and addAll() methods.",
+      "expected_answer": "If InstrumentedIntSet overrides add() to increment a counter, and also overrides addAll() to add elements.length to the counter then call super.addAll(), problems arise if the base IntSet.addAll() internally calls add() for each element. The counter increments in both addAll() (for the batch) and in each add() call (from super.addAll()), resulting in double-counting. The subclass is fragile because it depends on undocumented base class implementation details.",
+      "key_concepts": ["self-use in base class", "double counting", "undocumented implementation dependency", "subclass fragility"]
+    },
+    {
+      "id": "sa_015",
+      "topic": "inheritance",
+      "question": "How can a base class be 'designed for inheritance' to prevent the fragile base class problem?",
+      "expected_answer": "Document all self-use patterns (which methods call which internally). Use private helper methods for shared implementation rather than having public methods call each other. Mark methods as final if they shouldn't be overridden. Factor out common code into private methods that subclasses can't intercept. Alternatively, consider making the class final and preferring composition over inheritance.",
+      "key_concepts": ["document self-use", "private helper methods", "final methods", "designed vs prohibiting extension"]
+    },
+    {
+      "id": "sa_016",
+      "topic": "composition",
+      "question": "Rewrite an InstrumentedIntSet using composition instead of inheritance. What are the key structural differences?",
+      "expected_answer": "Declare a private final IntSet delegate field initialized in constructor. Implement IntSet interface by forwarding all methods to delegate (delegate.add(), delegate.remove(), etc.). For instrumentation, add counting logic in add() and addAll() before/after delegating. Key differences: no 'extends', explicit delegation, immune to base class self-use changes, can wrap any IntSet implementation, must implement all interface methods explicitly.",
+      "key_concepts": ["private delegate field", "interface implementation", "explicit forwarding", "immunity to base class changes"]
+    },
+    {
+      "id": "sa_017",
+      "topic": "testing",
+      "question": "Explain why assertEquals(new int[] {3, 6}, new int[] {3, 6}) fails in JUnit, and how to correctly test array equality.",
+      "expected_answer": "Java arrays use reference equality for equals() - two arrays with identical contents are not 'equal' unless they're the same object. assertEquals calls equals(), which compares references, so two separately created arrays fail even with same contents. Use assertArrayEquals() instead, which compares array contents element by element. For multidimensional arrays, use assertArrayEquals with proper deep comparison.",
+      "key_concepts": ["reference vs content equality", "array equals uses reference", "assertArrayEquals for contents", "separate objects fail equals"]
+    },
+    {
+      "id": "sa_018",
+      "topic": "testing",
+      "question": "What is the difference between @Before and @BeforeClass annotations in JUnit, and when would you use each?",
+      "expected_answer": "@Before runs before each test method - use for test fixtures that should be fresh for each test (ensuring test isolation). @BeforeClass runs once before any tests in the class - use for expensive setup shared across tests (like database connections) that doesn't affect test isolation. @BeforeClass methods must be static. Prefer @Before for most cases to maintain test independence.",
+      "key_concepts": ["per-test vs per-class", "test isolation", "@BeforeClass is static", "expensive shared setup"]
+    },
+    {
+      "id": "sa_019",
+      "topic": "testing",
+      "question": "Compare testing an expected exception using @Test(expected=...) versus assertThrows(). When is assertThrows preferred?",
+      "expected_answer": "assertThrows is preferred when you need to verify exception details beyond just the type. assertThrows returns the exception object, allowing assertions on its message, cause, or other properties. @Test(expected=...) only verifies that some code in the method threw that exception type - it can't test which line threw it or what the message was. assertThrows with a lambda also precisely identifies which code should throw.",
+      "key_concepts": ["exception detail verification", "assertThrows returns exception", "precise identification of throwing code", "message/cause testing"]
+    },
+    {
+      "id": "sa_020",
+      "topic": "testing",
+      "question": "What is a mock object and how does it facilitate testing a Controller that depends on a Model?",
+      "expected_answer": "A mock object simulates a real object with controlled, predictable behavior for testing. For testing a Controller, create a mock Model that returns predetermined values and records method calls. This lets you: test Controller logic in isolation, verify the Controller calls correct Model methods, simulate various Model states/responses without complex setup, and test error handling by having the mock throw exceptions.",
+      "key_concepts": ["controlled behavior", "test isolation", "verify method calls", "simulate various states"]
+    },
+    {
+      "id": "sa_021",
+      "topic": "factory",
+      "question": "Compare the constructors in IntSet1Impl (new IntSet1Impl()) with the static factories in IntSet2Impl (empty(), singleton(int)). What are the advantages of static factories?",
+      "expected_answer": "Static factory advantages: descriptive names (empty() vs new IntSet2Impl() with no indication it's empty), can return cached instances instead of always creating new objects, can return any subtype of the declared return type (implementation hiding), can return different implementations based on parameters, not required to create a new object each call. Disadvantages: can't be subclassed, not immediately obvious they're constructors.",
+      "key_concepts": ["descriptive names", "caching/instance control", "subtype returns", "implementation hiding"]
+    },
+    {
+      "id": "sa_022",
+      "topic": "gui",
+      "question": "Explain why extending MouseAdapter instead of implementing MouseListener is preferred when you only need to handle mouseClicked events.",
+      "expected_answer": "MouseListener has five methods (clicked, pressed, released, entered, exited) - implementing it requires providing all five, even if empty. MouseAdapter is an abstract class with empty default implementations of all MouseListener methods. By extending MouseAdapter, you only override the methods you need (mouseClicked), avoiding clutter from unused empty implementations. This follows the Adapter pattern principles.",
+      "key_concepts": ["interface requires all methods", "adapter provides defaults", "override only needed methods", "reduced boilerplate"]
+    },
+    {
+      "id": "sa_023",
+      "topic": "gui",
+      "question": "In a Swing application, why must you override paintComponent(Graphics g) rather than paint(Graphics g), and what precaution should you take at the start of paintComponent?",
+      "expected_answer": "paint() handles all painting including borders, children, and the component itself. Override paintComponent() for custom drawing because it's called specifically for the component's content after borders are drawn and before children. Always call super.paintComponent(g) first to ensure the panel is properly cleared/initialized - without this, previous paint artifacts may remain, especially with transparent backgrounds or when resizing.",
+      "key_concepts": ["paintComponent for content only", "paint includes borders/children", "super.paintComponent for cleanup", "clearing previous artifacts"]
+    },
+    {
+      "id": "sa_024",
+      "topic": "mvc",
+      "question": "How does using Scanner with a Readable differ from using Scanner with System.in in terms of testability?",
+      "expected_answer": "System.in is a global InputStream tied to the console - tests using it require actual input or complex stream manipulation. Readable is an interface that can be implemented by StringReader for testing - construct with predetermined input string, no console interaction needed. A controller using Scanner(Readable) can be tested by passing new StringReader(\"1\\n2\\n\") to simulate user input, enabling fully automated tests.",
+      "key_concepts": ["interface vs concrete class", "StringReader for testing", "predetermined input", "no console interaction"]
+    },
+    {
+      "id": "sa_025",
+      "topic": "adapter",
+      "question": "When adapting IntSet1 (element-wise operations) to IntSet2 (set-wise operations), how would you implement isSupersetOf(IntSet2 other)?",
+      "expected_answer": "Iterate through all elements in other using other.asList(). For each element, check if this set contains it using member(). If any element is not a member, return false. If all elements are found, return true. Implementation: for (int z : other.asList()) { if (!member(z)) return false; } return true;",
+      "key_concepts": ["iterate other's elements", "check membership", "early false return", "true if all present"]
+    },
+    {
+      "id": "sa_026",
+      "topic": "inheritance",
+      "question": "Why might you declare methods in IntSet3 as 'final' when designing a class for safe extension?",
+      "expected_answer": "Final methods cannot be overridden, preventing subclasses from intercepting calls and potentially breaking invariants. If addAll() is final and calls a private helper (not the public add()), subclasses can safely override add() without affecting addAll()'s behavior. This protects the base class's internal logic from subclass interference while still allowing controlled extension points.",
+      "key_concepts": ["prevent override", "protect internal logic", "safe extension points", "controlled inheritance"]
+    },
+    {
+      "id": "sa_027",
+      "topic": "decorator",
+      "question": "Explain why decorators should implement the same interface as the component they decorate, rather than extending the component class.",
+      "expected_answer": "Interface implementation allows: decorating any implementation of the interface (not tied to one class), using multiple decorators in any order (they're interchangeable), avoiding inheritance hierarchy complications, and maintaining the Liskov Substitution Principle. A decorator wrapping an interface can work with current and future implementations, while extending a class ties you to that specific hierarchy.",
+      "key_concepts": ["interface-based wrapping", "implementation independence", "decorator composability", "LSP compliance"]
+    },
+    {
+      "id": "sa_028",
+      "topic": "mvc",
+      "question": "What is the role of a 'mock view' or 'log' in testing an MVC controller, and how would you implement one?",
+      "expected_answer": "A mock view records/logs all interactions for later verification. Implement by creating a class implementing the View interface that appends method calls and parameters to a StringBuilder/log. After running the controller, examine the log to verify correct sequence of view updates. This tests that the controller calls view methods correctly without needing actual GUI rendering.",
+      "key_concepts": ["record interactions", "verify method sequence", "no GUI rendering", "interaction testing"]
+    },
+    {
+      "id": "sa_029",
+      "topic": "strategy",
+      "question": "How would you implement a 'composite strategy' that tries multiple TicTacToe strategies in order until one returns a valid move?",
+      "expected_answer": "Create a CompositeStrategy implementing TicTacToeStrategy that holds a List of strategies. In chooseMove(), iterate through strategies, calling each one's chooseMove(). If a strategy returns a valid Coord (not null, within bounds, unoccupied cell), return it. If a strategy returns null or invalid move, try the next one. Return null or throw if no strategy succeeds. This combines strategies with fallback behavior.",
+      "key_concepts": ["list of strategies", "try in order", "fallback mechanism", "first valid result"]
+    },
+    {
+      "id": "sa_030",
+      "topic": "command",
+      "question": "Describe how you would design a macro command that executes multiple turtle commands as a single unit, supporting both execute and undo.",
+      "expected_answer": "Create MacroCommand implementing Command that holds a List<Command> of sub-commands. execute() iterates through the list calling execute() on each in order. undo() iterates in reverse order calling undo() on each. This ensures the macro is atomic - all sub-commands execute or none do (if needed, wrap in try-catch), and undo properly reverses the sequence. Store/restore aggregate state if needed for efficiency.",
+      "key_concepts": ["composite pattern", "execute in order", "undo in reverse", "atomic operation"]
+    }
+  ]
+}

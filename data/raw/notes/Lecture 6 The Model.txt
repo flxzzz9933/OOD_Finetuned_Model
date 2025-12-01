@@ -1,0 +1,405 @@
+Lecture 6: The Model
+Slides
+
+Overview of lecture
+This lecture introduces a central high-level design: the model-view-controller (MVC). MVC or one of its variants are used in a wide variety of applications, ranging from games and productivity applications to web-based applications. This lecture also walks through the design of a model for some simple games. Finally it motivates and explains the builder design pattern.
+
+1 Introduction
+Suppose you wanted to implement a graphical game. Where would you start, and how would you structure your program? A common object-oriented technique for structuring graphical programs is the model—view—controller pattern, which separates the program into three distinct but cooperating components,
+
+the controller, which takes input from the user and decides what to do,
+the view, which knows how to display the game interface to the user,
+the model, which represents the state of the game internally and (often) enforces its rules.
+
+
+Generalizing this concept to other kinds of programs, the model implements the actual functionalities offered by the program. The view is the part of the program that shows results to the user. The controller takes inputs from the user and tells the model what to do and the view what to show. Take the IDE you are using to write programs as an example (IntelliJ). The view shows the source code, the project structure and the console output. The controller is the part that decides what to do when you select “Run” or “File->Open” and tells others parts of the program to actually carry out the operations. The model is the part that you cannot see, but one that actually compiles, runs and debugs your program (or works with other programs that do).
+
+
+
+The MVC design allows you to isolate the entire behavior of your program into categories: actual functionality, user display and user interaction and delegation. Practically each class you will design for the program should fall in exactly one of the model, view or controller. A badly implemented MVC design would be if a class mixes operations (e.g. a class that implements a functionality and prints the result, a class that shows a menu and implements some of its offered operations, etc.). This is illustrated in the figure above. Thus the MVC design, when used correctly, promotes cohesion.
+
+
+
+The MVC design also mandates which components can directly use other components. Since the model, view and controller have separate functions, access to each other is also restricted. Typically the model and the view cannot directly access each other, and the controller communicates with both. In many programs the view cannot ask the controller for data: the controller decides when to provide data to it. This is illustrated in the figure above. In doing so, the MVC design promotes low coupling between groups of classes.
+
+Another way to think about the merits of MVC is what each part does not do:
+
+Model:
+
+What it does: implements all the functionality
+What it does not do: does not care about which functionality is used when, how results are shown to the user
+Controller:
+
+What it does: takes user inputs, tells model what to do and view what to display
+What it does not do: does not care how model implements functionality, does not care how the screen is laid out to display results
+View:
+
+What it does: display results to user
+Does not do: does not care how the results were produced, when to respond to user action
+Most of the code you have developed in this and previous courses thus far would belong to the model, so we can treat the model as a good starting point.
+
+2 An introductory example: Tic-tac-toe
+For the unfamiliar, Tic-tac-toe is a two-player game played on a 3-by-3 grid, where the players alternately mark cells of the grid. A player wins by making a line of three marks, or if the grid fills with no winner then the result is a tie. For example, here a sequence of game states in which player “X” wins:
+
+
+
+2.1 Object-oriented analysis
+In order to design a model for a Tic-tac-toe game, we need to consider who the client (user) of our model is. This is going to be another class likely in the controller, not the human player of the game! This client will need to perform to manipulate and query the game state. What do we need to be able to do? These operations should suffice:
+
+Play a move as X.
+Play a move as O.
+Find out whose turn it is.
+Find out the contents of the grid, perhaps in order to display it.
+Find out whether the game is over, and if so, who the winner is, if any.
+Because we want the model to enforce the rules of the game, we should also consider ways in which clients should not be able to manipulate the model. The following are problematic cases during game play:
+
+Attempting to play out of turn.
+Attempting to play in a cell that already has a mark.
+Attempting to play after the game has ended.
+Attempting to play in a cell that doesn’t exist (if the interface allows that to be expressed).
+We can address these cases using a three-step approach:
+
+Prevent the situation from ever happening, by careful design. If this is possible it means no further code needs to be written to “take care” of this situation.
+If prevention is not possible, detect the situation has happened and throw an exception.
+Having completed our analysis, we can now begin to design an interface for the Tic-Tac-Toe model.
+
+2.2 Designing an interface
+We have a number of choices for how to realize the operations above as methods in Java. Let’s start with a method or methods for playing moves.
+
+2.2.1 How to move
+In one possible design, we could provide separate methods for playing as X and playing as O:
+
+/**
+ * Places an X mark in the specified cell.
+ *
+ * @param column the column of the cell
+ * @param row    the row of the cell
+ * @throws IllegalStateException if it's O's turn, if the game is
+ * over, or if there is already a mark in the cell.
+ * @throws IndexOutOfBoundsException if the cell is out of bounds.
+ */
+void moveAsX(int column, int row);
+
+/** ...same as above, but for O... */
+void moveAsO(int column, int row);
+(Note: is the Javadoc above any good? What is left unclear, that ought to be specified more carefully?)
+
+With the above design, the model must throw an exception if its client calls moveAsX when it is O’s turn or moveAsO when it is X’s turn.
+
+Alternatively, because the model must track whose turn it is, we could simply have one move method, and require the model to move for the correct player in each case. This is an example of preventing a problematic situation through design:
+
+/**
+ * Places an X or O mark in the specified cell. Whether it places an X
+ * or O depends on which player's turn it is.
+ *
+ * @param column the column of the cell
+ * @param row    the row of the cell
+ * @throws IllegalStateException if the game is over, or if there is
+ * already a mark in the cell.
+ * @throws IndexOutOfBoundsException if the cell is out of bounds.
+ */
+void move(int column, int row);
+Of course, there are additional possibilities such as a single move method that takes some specification of which player is moving as the parameter. And we may not have specified the method fully, since we haven’t said how the column and row coordinates map onto the grid. (Are they zero- or one-based? How are they oriented?1)
+
+2.2.2 Whose turn is it?
+In order to allow the client to find out whose turn it is, we also have several choices. One simple way is a boolean method or methods to ask if it is a particular player’s turn:
+
+/**
+ * Determines whether it is player X's turn to move.
+ *
+ * @return whether X can play now
+ */
+boolean isXsTurn();
+
+/** ...same as above, but for O... */
+boolean isOsTurn();
+Even within the above approach, we have a design choice: What should the methods do if called once the game is over? They could return false, or they could throw an exception; either way, we ought to document this choice. Which do you prefer, and why?
+
+Another way would be to have the method return some representation of the player whose turn it is, like so:
+
+/**
+ * Returns the player whose turn is next.
+ *
+ * @return the next player
+ * @throws IllegalStateException if the game is over
+ */
+? nextPlayer();
+There are a variety of choices we could use for the return type ?. Which of these do you prefer, and why?:
+
+type char, with 'X' for X and 'O' for O
+class String, with "X" for X and "O" for O
+type boolean, with true for X and false for O
+type boolean, with true for O and false for X
+an enumeration defined as enum Player { X, O }
+Using type char is a poor design choice, because the char type has many other values that don’t stand for valid players. Java’s type system will not help us in preventing nextPlayer from returning meaningless values—so then what should we do if it does? More to the point, the char type is good for representing textual characters, and (ab)using it for other meanings is unstylish.
+
+Using a String is even worse, because it has all the same drawbacks as using a char, except it has even more possibilities, including null, the empty string, and longer strings. (Important guideline you should always follow: Strings are for representing textual information, where the possible values are many or unlimited and not known ahead of time. If you find yourself using strings to represent some small set of values, or for any kind of internal API communication that is never presented to the user, you are doing it wrong.)
+
+The boolean idea solves the main problems that we saw with char and String: there are exactly two Boolean values, and we need two values. However, boolean could be confusing, because which player is true and which false is non-obvious. In general, we should use booleans only when the value we are trying to represent is a truth value.
+
+Finally, we come to the enumeration, which declares a new class Player having exactly two values, Player.X and Player.O. This expresses very clearly what the possibilities are and what they mean. One caveat with enumerations, though: switch statements over enumerations always require a default case, even if every current possibility appears in some other case. This is because Java assumes an open world, in which more values can be added to an enumeration at a later time.
+
+2.2.3 Getting the grid
+We want our model to enforce the rules of the game. This is not because we expect untrustworthy users to interact with it directly—all their interactions will be mediated by the view and the controller—but because enforcing model integrity within the model class provides a good separation of concerns. The code that represents the state of the game is the right place to write the logic for how that state may evolve, and encapsulating this logic in the model will make the rest of our program simpler and less error-prone.
+
+In order to enforce the rules and prevent client code from corrupting the state of the grid, we need to ensure that all changes to the state happen via our model class’s public methods, which will enforce the rules. Thus, we cannot merely return a reference to our internal mutable representation of the grid to the client, because then the client could change it. However, we can safely return a copy of the grid (which need not be the same type as what we use internally):
+
+/**
+ * Returns a two-dimensional array representing the state of the
+ * grid. The first index is the column and the second the row.
+ * The resulting array is newly allocated and unconnected to the model;
+ * thus, mutating it will have no effect on the model or subsequent
+ * calls to {@code getGrid}.
+ *
+ * @return a copy of the grid
+ */
+Player[][] getGrid();
+Alternatively, rather than return some representation of the grid, we could provide some means of querying it:
+
+/**
+ * Returns the {@link Player} whose mark is in the cell at the given
+ * coordinates, or {@code null} if that cell is empty.
+ *
+ * @param column the column of the cell
+ * @param row    the row of the cell
+ * @return a {@code Player} or {@code null}
+ * @throws IndexOutOfBoundsException if the cell is out of bounds.
+ */
+Player getMarkAt(int column, int row);
+2.2.4 Finding out the results
+Finally, we need some way to find out when the game is over and who, if anyone, won. Unlike the previous operations, there isn’t much room in this design space (though there are a few sensible alternatives). We will have one method to ask whether the game is over and another to ask who has won:
+
+/**
+ * Determines whether the game is over.
+ *
+ * @return whether the game is over
+ */
+boolean isGameOver();
+
+/**
+ * Returns the winner of the game, or {@code null} if the game is a
+ * tie.
+ *
+ * @return the winner or {@code null}
+ * @throws IllegalStateException if the game isn't over
+ */
+Player getWinner();
+In a game that does not admit ties, could these methods be combined into one? Is that a good idea?
+
+2.3 Implementation
+Tic-tac-toe is a very simple game, yet designing the interface to the model can still be an involved process. Some decisions are consequential, some not, and we might not be able to tell which is which until we start attempting to implement or even use the interface. However, whatever interface design we might choose, much of the hard work is now done, and implementing the interface is a simple matter of programming.
+
+3 A bigger example: Connect N
+As our second example, we consider the game Connect N, which is a generalization of the game Connect Four. In Connect Four, two players take turns dropping tokens (white for one player and red for the other) into a vertical 7-by-6 grid. The first player to form a line of four or more of their tokens, horizontally, vertically, or diagonally, wins the game. For Connect 𝑁
+, we will allow the dimensions of the grid, the line length necessary to win, and the number of players to be configurable rather than fixed.
+
+For example, here is a sequence of game states for two-player, 3-by-4 Connect Three in which Player W wins:
+
+
+
+3.1 Object-oriented analysis
+We begin our design once again by considering what operations the model must provide and what exceptional conditions the operations will detect. The operations are somewhat similar to Tic-tac-toe’s operations. We need ways to:
+
+Play a move as a particular player. (How will we represent players when the number isn’t fixed at two?)
+Find out about the configuration parameters of the game, including:
+the dimensions of the grid,
+the goal line length needed to win, and
+who the players are.
+Find out about the state of the game, including:
+whose turn it is,
+the contents of the grid,
+whether the game is over,
+and if so, who the winner is, if any. (Connect N, like Tic-tac-toe, allows for ties.)
+We need to reject bad moves, including playing out of turn, playing in a non-existent column, or playing in a column that is already full to the top. Additionally, we may want to make it an error to ask for the winner before the game is over, or to ask for the next player after the game is over.
+
+3.2 Interface design
+Because several methods will deal with players, one of the first decisions we must make is how to represent the players and their tokens. One simple way would be with integers counting up from 0. However, we will make the model slightly richer by associating a name, represented as a String, with each player. The set of players and their turn order will be represented as a String[], with most methods representing each player as an index into that array.
+
+3.2.1 How to move?
+To take a turn, it is sufficient to select which column the current player wants to play in. However, as an extra check, we will have the move method also take the int representing the player who is moving, which the model then checks before allowing the move. Thus:
+
+/**
+ * Plays a move. Given the player (whose turn it must be) and the column
+ * number (zero-based from the left), attempts to add a token for that
+ * player to that column. If this move ends the game then the game state
+ * is updated to reflect that. Because it may be useful to the client,
+ * this method returns the row number where the token lands.
+ *
+ * @param who    the player who is moving
+ * @param where  which column to play in
+ * @return the row where the token ends up
+ *
+ * @throws IllegalStateException if the game is over
+ * @throws IllegalStateException if it isn't {@code who}'s turn
+ * @throws IllegalStateException if the requested column is full
+ * @throws IndexOutOfBoundsException if the requested column does not exist
+ */
+int move(int who, int where);
+3.2.2 Querying the configuration
+Although presumably the client must specify the game configuration when instantiating the game model, it may be useful to allow the client to ask the model for this information. (Why?) Thus, we will have methods that return the width and height of the grid, the goal line length, and the sequence of players:
+
+int getWidth();
+
+int getHeight();
+
+int getGoal();
+
+String[] getPlayers();
+It’s important that getPlayers() return a copy of the array held by the model object rather than the array itself, since returning the array itself would then allow the client to modify the model’s private state.
+
+3.2.3 Querying the game state
+The game is always in one of three different statuses:
+
+Playing, when the game isn’t over yet,
+Stalemate, when the game has ended in a tie, and
+Won, when the game has ended with a winner.
+In order to communicate these statuses to the client, we will declare an enumeration within the game model class:
+
+public static enum Status { Playing, Stalemate, Won }
+We make the enumeration public so clients can see it, and static because it’s the same for every game instance.2 Then in order to check the status, the client can use the getStatus method; as a convenience we will also define an isGameOver method:
+Status getStatus();
+
+/**
+ * Determines whether the game is over.
+ *
+ * @return whether the game is over
+ */
+boolean isGameOver();
+When the game isn’t over, we can ask which player’s turn it is, and when the game has a winner, we can ask who the winner is:
+
+/**
+ * Returns the winner of the game.
+ *
+ * <p><strong>PRECONDITION:</strong> the game is over and has a winner
+ *
+ * @return the winner
+ * @throws IllegalStateException if {@code getStatus() != Status.Won}
+ */
+int getWinner();
+Finally, we need a way for the client to observe the contents of the grid. This time we will provide a way to query the token at any given cell position. Because some cells may be empty of tokens, we need some way to distinguish empty cells from player numbers. The wrapped integer type Integer includes null, so we use Integer instead of int for the result with null representing empty cells.
+
+Additionally, we will include a convenience method3 for asking whether a particular column is full.
+
+/**
+ * Gets the player whose token is at the given column and row. The
+ * coordinates are zero-based and start in the lower left. Returns
+ * {@code null} if there is no token in the given position.
+ *
+ * @param x the column coordinate ({@code 0 <= x < width})
+ * @param y the row coordinate ({@code 0 <= y < height})
+ * @return the player in the given position, or {@code null}
+ * @throws IndexOutOfBoundsException if (x, y) is out of bounds
+ */
+Integer getPlayerAt(int x, int y);
+
+/**
+ * Determines whether the specified column is full and thus cannot be played
+ * in.
+ *
+ * @param which the column to check
+ * @return whether column {@code which} is full
+ */
+boolean isColumnFull(int which);
+4 Configuring the model: the Builder pattern
+Note: for more on the Builder pattern, see Bloch, Item 2.
+
+We designed our Connect N game to have some flexibility in its parameters, so it’s worth discussing how a client can select those parameters when instantiating the model. We could, of course offer a constructor that takes all of the parameters that are allowed to vary:
+
+/**
+ * Constructs a new game model with the given parameters.
+ *
+ * @param width    the width of the grid (positive)
+ * @param height   the height of the grid (positive)
+ * @param goal     the goal line length for the game ({@code > 1})
+ * @param players  the array of player names (non-null, non-empty, and
+ *                 each element non-null)
+ */
+public ConnectNModel(int width, int height, int goal, String[] players);
+(Note that while we do not say which exceptions we might throw in the Javadoc, it should be clear that violating any of the method preconditions will result in an IllegalArgumentException.)
+However, having to provide all four parameters every time is annoying, especially if standard Connect Four is the common case. It’s easy enough to provide a second, nullary constructor that uses the default values:
+
+/**
+ * Constructs a new game model for Connect Four with the default parameters.
+ */
+public ConnectNModel();
+However, what if want to change only one parameter—the width, say—while leaving the others at their defaults. With only the above two constructors, we must use the four-argument constructor, passing the width that we want and the default values for the other three parameters. That requires knowing the default values, and it’s tedious. Wouldn’t it be nice if there were a way to only specify how we want to differ from the defaults?
+
+One common way to allow defaulting some of the parameters is to define constructors with different sets of parameters. Unfortunately, this can be confusing and error prone. For example, if there were a constructor that took one argument, an int, which game parameter would you expect that to be?
+
+Another common solution is to provide setters for the configuration parameters, so that the client can create a game model and then configure it by modifying it. However, this creates another problem: What happens if the client tries to reconfigure a game already in progress? Of course it could detect this and throw an exception, but this solution is not satisfactory because it violates two design principles: 1) that it’s better to make bad states or operations unexpressible than to catch them later, and 2) that when we want different behaviors, we should use different classes rather than a bunch of conditionals.
+
+A better solution for handling several optional arguments is the builder pattern. When using the builder pattern, the client does not call the class’s constructor directly—in fact, we will make the constructor private, so that clients must instantiate model instances via the builder. Instead, the client first creates some kind of builder object, which encapsulates the configuration parameters for the game:
+
+/**
+ * Constructs a builder for configuring and then creating a game model
+ * instance. Defaults to a standard game of Connect Four with players
+ * named "White" and "Red".
+ *
+ * @return the new builder
+ */
+public static Builder builder();
+The builder starts out with the default parameter values, and then provides several methods for changing whichever parameters we choose without saying anything about the others. In this case, that means we need a method for each of the parameters: the width, the height, the goal, and the array of players. Then, the builder provides a method build() that instantiates a game model object using the builder’s current parameters. Here’s the interface:
+
+public static final class Builder {
+  /**
+   * Sets the width of the game grid.
+   *
+   * @param width the width (positive)
+   * @return {@code this}, for method chaining
+   */
+  public Builder width(int width) { ... }
+
+  /**
+   * Sets the height of the game grid.
+   *
+   * @param height the height (positive)
+   * @return {@code this}, for method chaining
+   */
+  public Builder height(int height) { ... }
+
+  /**
+   * Sets the goal line length for the game.
+   *
+   * @param goal the goal (positive)
+   * @return {@code this}, for method chaining
+   */
+  public Builder goal(int goal) { ... }
+
+  /**
+   * Sets the players for the game. Makes a defensive copy of the
+   * player array, so the client cannot change it from under us.
+   *
+   * @param players the array of player names (non-null, non-empty,
+   *                and every element non-null)
+   * @return {@code this}, for method chaining
+   */
+  public Builder players(String... players) { ... }
+
+  /**
+   * Builds and returns the specified {@link ConnectNModel}.
+   *
+   * @return a new {@code ConnectNModel}
+   */
+  public ConnectNModel build() { ... }
+}
+Then to create our wide Connect Four instance, we can use the builder object to specify only the parameters we want:
+
+ConnectNGame.builder().width(15).build()
+4.1 How to obtain a Builder?
+In the code above, we include a public static method on the ConnectNModel class that provides a means of obtaining a Builder object. We could just expose the constructor of the Builder class directly:
+
+(new ConnectNGame.Builder())...
+but this is less flexible and more tightly coupled than the previous alternative. We’ve now forced our clients to depend on the Builder class directly, but if our model evolves, and we eventually have multiple subclasses of Builder, our clients are forced to change code to match. The static method, on the other hand, encapsulates the call to the Builder constructor, and so insulates the client from needing to know how it works.
+
+Additionally, we can now provide multiple such static methods, to “preconfigure” the Builder with some default options, or to select among multiple builder implementations. This flexibility is not needed in this simple example, but might come in handy later.
+
+4.2 Committing to the Builder pattern
+Once we decide that a Builder makes sense, we ought to commit to it fully. That entails making the constructor(s) of the ConnectNModel class private or protected, so that clients cannot construct such a model directly, but must instead go through the Builder.
+
+Why bother? Essentially, it boils down to a subjective decision on whether the objects we’re trying to create are heavily configurable (now or in the foreseeable future), or only mildly so. If there’s only mild configuration, then perhaps a few well-chosen public constructors will suffice. But if we can foresee that there will be lots of independently customizable parameters, then we can sidestep having to design lots of constructors, and at the same time avoid letting customers begin to depend on details that we may not want to expose later on. In short, the builder pattern lets us future-proof our class against future customizability. It may not always be necessary, but it’s often too late to introduce it afterward, so it’s worth considering early whether it may be needed eventually.
+
+1Tic-tac-toe has both rotational and reflective symmetries, which means that the orientation doesn’t actually matter so long as the UI is consistent.
+
+2Static classes and enumerations are like static fields and methods, in that they are part of the class rather than part of each object of the class.
+
+3Meaning that the client could do what this method does using the other public methods, but it’s still nice to have.

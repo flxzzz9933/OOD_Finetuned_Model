@@ -1,0 +1,118 @@
+Announcements
+
+1. I have OH tomorrow, 1-3pm. Meserve 335.
+2. Your lab on Monday is on Builders, today's topic.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Problem: I wish I could separate the I/O part of my controller
+         from the part that knows how to execute commands.
+
+Solution: Command Design Pattern
+
+1. Create an interface for all of our commands and it has one method:
+    void execute(... whatever is needed to execute any command...)
+
+2. For each command we wish to execute, create a class
+   that implements the command interface. If the command
+   needs extra information, pass it into the constructor.
+
+3. In the controller, when a command is recognized, create the
+    corresponding command object. Execute it at the end of the
+    switch statement.
+
+
+
+
+
+
+Problem: I wish I could expose a way for my client to create a customizable object.
+
+Solution: Make a Builder for the object.
+
+(*Assuming Foo can be edited. If not, the builder is its own class).
+1. Say Foo is the name of the object we want to make. Create a new static inner class to Foo
+    and call it FooBuilder.
+
+2. Declare the fields of FooBuilder as what you want the client to customize. (AKA, the arguments
+    to Foo's constructor).
+
+3. For each customization you wish to allow, create the following method
+
+    public FooBuilder <name-to-represent-customization> (... args needed for customization...) {
+        ... customize...
+        return this;
+    }
+
+4. If there are any default values to those fields, make the following constructor
+
+   public FooBuilder() {
+        ... initialize fields to defaults if you know them ...
+   }
+
+5. Add a method to build the object called build
+
+   public Foo build() {
+        return new Foo(...);
+   }
+
+(* Assuming you are allowed to edit Foo)
+6. In Foo, add a public static method that returns a new FooBuilder
+
+    public static FooBuilder builder() {
+        return new FooBuilder();
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

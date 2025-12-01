@@ -1,0 +1,181 @@
+Lecture 16: The Strategy and Decorator Patterns
+Java source (.zip)
+Objectives of the lecture
+This lecture introduces two design patterns: strategy and decorators. Both patterns are useful to enhance existing operations and implement combinations of existing implementations of operations.
+
+The strategy and decorator patterns are very similar idioms of using delegation to refactor aspects of a class’s behavior into separate classes, for easier enhancement or modification, and tighter cohesiveness. The strategy pattern is somewhat more intuitive to motivate with real-world examples, so we’ll start there.
+
+1 The strategy pattern
+Let’s consider a straightforward game for which the technique for winning is easily, thoroughly mastered: TicTacToe. How might we play this game? Here are some ideas:
+
+Play in an open square
+Play to an open corner
+Block the opponent from winning
+Place a third piece in a row to win
+All but the first of these aren’t complete strategies. If the corners are all full, for instance, then the second approach doesn’t have any recommendation to make. So perhaps more accurately, our complete strategies might be:
+
+Play in an open square
+Play to an open corner, or else play in an open square
+Block the opponent from winning if they’re about to, otherwise play to an open corner, otherwise just play to an open square
+Place a third piece in a row to win, or else block the opponent if they’re about to win, or else play in an open corner, or else just play to an open square
+It’s probably intuitively clear to you, as an expert human player of TicTacToe, that the final strategy above is pretty good.1 How might we implement these strategies?
+
+1.1 A strategy is just a function object
+Suppose in our program we had a TicTacToeModel containing the board state, and a Piece enumeration naming X and O. Our program also contains two Player objects (one for each Piece), which may call the model’s playMove(Piece player, int row, int col) method to make a move. How should the Players choose where to move? What information would be needed to make an informed choice? We’d need to know the state of the board, and also know which player we’re trying to choose a move for:
+
+class Coord {
+  int row;
+  int col
+}
+interface TicTacToeStrategy {
+  Coord chooseMove(TicTacToeModel model, Piece forWhom);
+}
+Implementing our first strategy is pretty easy. It doesn’t care who it’s choosing a move for; it just seeks out the first open square:
+
+class AnyOpenSquare implements TicTacToeStrategy {
+  public Coord chooseMove(TicTacToeModel model, Piece forWhom) {
+    for (int r = 0; r < 3; r++)
+      for (int c = 0; c < 3; c++)
+        if (model.getPieceAt(r, c) == null)
+          return new Coord(r, c);
+    return null;
+  }
+}
+(Note: we are returning null at the moment to indicate the lack of an available move. This not a great idea – might consider throwing an exception instead, to indicate that our strategy could not succeed. But see Avoiding null: Multiple strategy signatures below for a better approach still.)
+
+How might we implement the second strategy? We could implement the entirety of the logic (choose corners or else choose random), but part of that logic has been implemented already... Let’s implement just the new part, first:
+
+class AnyOpenCorner implements TicTacToeStrategy {
+  public Coord chooseMove(TicTacToeModel model, Piece forWhom) {
+    if (model.getPieceAt(0, 0) == null)      return new Coord(0, 0);
+    else if (model.getPieceAt(0, 2) == null) return new Coord(0, 2);
+    else if (model.getPieceAt(2, 0) == null) return new Coord(2, 0);
+    else if (model.getPieceAt(2, 2) == null) return new Coord(2, 2);
+    else                                     ????????
+  }
+}
+How might we fill in the question-marks? This strategy looks for an open corner, but if it can’t find one, it needs to use another approach to pick a response. Fortunately, we have such an approach already: we could reuse AnyOpenSquare!
+
+class AnyOpenCorner implements TicTacToeStrategy {
+  public Coord chooseMove(TicTacToeModel model, Piece forWhom) {
+    if (model.getPieceAt(0, 0) == null)      return new Coord(0, 0);
+    else if (model.getPieceAt(0, 2) == null) return new Coord(0, 2);
+    else if (model.getPieceAt(2, 0) == null) return new Coord(2, 0);
+    else if (model.getPieceAt(2, 2) == null) return new Coord(2, 2);
+    else
+       return new AnyOpenSquare().chooseMove(model, forWhom);
+  }
+}
+This resolves the question-marks, at the cost of hardcoding which fallback mechanism to choose. But we can definitely be more flexible.
+
+1.2 Strategies can be composed
+The any-open-square strategy and the any-open-corner strategy are both functions that take in a board state and return a coordinate to move. We can easily, and generally, combine the two of them into a higher-order strategy that first tries one and then, if it fails, tries the other:
+
+class TryTwo implements TicTacToeStrategy {
+  TicTacToeStrategy first, second;
+  public Coord chooseMove(TicTacToeModel model, Piece forWhom) {
+    Coord ans = this.first.chooseMove(model, forWhom);
+    if (ans != null) return ans; // the first strategy succeeded
+    return this.second.chooseMove(model, forWhom);
+  }
+}
+If we fill in the question-marks in AnyOpenCorner with return null, as we effectively did with AnyOpenSquare, then our full second strategy is simply new TryTwo(new AnyOpenCorner(), new AnyOpenSquare()). We can continue implementing the other strategy components (blocking an opponent, or going for an immediate win), and combining them with TryTwo. (These other components need the forWhom argument —try implementing them yourself.)
+
+More broadly, strategies can be composed in lots of different ways, analogous to mapping, and-map, or-map, or other higher-order combinations. We can generalize from TryTwo to TryMany (that takes a list of strategies); we can generalize to randomly selecting among several strategies, or more sophisticated choices among several strategies. We might possibly try a BestOfThree strategy that take in three strategies, try them all, and pick the value that at least two strategies agreed on. The possibilities here are vast.
+
+1.3 Strategies can be dynamically selected
+Suppose we wanted to build a TicTacToe game for players of varying ability, and wanted “easy”, “medium”, and “hard” difficulty levels. We could easily mix and match compositions among the four simple strategies above, and dynamically assign some such object at runtime:
+
+User computerUser = ...;
+Strategy easy = new TryTwo(new PlayToWin(), new AnyOpenSquare());
+Strategy medium = new TryTwo(new PlayToWin(), new TryTwo(new DontLose(), new AnyOpenSquare()));
+Strategy hard = new TryTwo(new PlayToWin(),
+                  new TryTwo(new DontLose(),
+                    new TryTwo(new AnyOpenCorner(), new AnyOpenSquare())));
+if (difficulty == EASY)
+  computerUser.playStrategy(easy);
+else if (difficulty == MEDIUM)
+  computerUser.playStrategy(medium);
+else
+  computerUser.playStrategy(hard);
+Rather than hardcoding the difficulty level of the game, we have refactored it out and made it easily configurable.
+
+We can also define an AskUser strategy...and now we have something the controller can use to interact with a human player, in the same framework as these other strategy choices.
+
+(Note that in this scenario, the composition of strategies could be rearranged:
+
+new TryTwo(new TryTwo(new PlayToWin(), new DontLose()),
+           new TryTwo(new PlayToCorner(), new AnyOpenSquare()));
+behaves exactly the same as our hard strategy above, even though the component strategies are arranged in a tree instead of a list. Depending on which combinations you pick, there may easily be many ways to express the desired result.)
+
+1.4 Strategies make for easy testing
+If we supply two strategies to our controller and say “play the game with two players using these respective strategies”, what could happen? If both strategies are fully automatic, then we’ve built a great test harness to run through the game automatically! Combining this with the Appendable output we’ve seen in earlier lectures, and we have a straightforward means to simulate a playthrough of the game. Moreover, testing different strategies against each other lets us not only test whether they work properly, but also how well they do at playing the game.
+
+2 Avoiding null: Multiple strategy signatures
+Above, we built four partial strategies, that worked when possible and returned null otherwise. This is a bad idea, since the user of these strategies is forced to check for nullness before using the result. But it’s a mistake of our own making: we chose a return type for our strategy that didn’t include the possibility of failure. A complete strategy in this game will always be able to choose a place to play (assuming any open places remain). But partial strategies might not always be able to do so.
+
+Accordingly, since these are now two different purpose statements ("Find me a place!" versus "Try to find a place if you can"), we might encode them as two different strategy interfaces:
+
+// An interface describing strategies whose return value cannot fail:
+// they will always return a non-null Coord, or else
+// throw an excpetion if they're called on a game that cannot have a move
+interface InfallibleTicTacToeStrategy {
+  Coord chooseMove(TicTacToeModel model, Piece forWhom) throws IllegalStateException;
+}
+
+// An interface describing incomplete or partial strategies, that
+// might successfully choose a move and might not.
+interface FallibleTicTacToeStrategy {
+  Optional<Coord> chooseMove(TicTacToeModel model, Piece forWhom);
+}
+Then our partial strategies above would be better written as
+
+class AnyOpenSquare implements FallibleTicTacToeStrategy {
+  public Optional<Coord> chooseMove(TicTacToeModel model, Piece forWhom) {
+    for (int r = 0; r < 3; r++)
+      for (int c = 0; c < 3; c++)
+        if (model.getPieceAt(r, c) == null)
+          return Optional.of(new Coord(r, c));
+    return Optional.empty();
+  }
+}
+
+class AnyOpenCorner implements FallibleTicTacToeStrategy {
+  public Optional<Coord> chooseMove(TicTacToeModel model, Piece forWhom) {
+    if (model.getPieceAt(0, 0) == null)      return Optional.of(new Coord(0, 0));
+    else if (model.getPieceAt(0, 2) == null) return Optional.of(new Coord(0, 2));
+    else if (model.getPieceAt(2, 0) == null) return Optional.of(new Coord(2, 0));
+    else if (model.getPieceAt(2, 2) == null) return Optional.of(new Coord(2, 2));
+    else                                     return Optional.empty();
+  }
+}
+
+class TryTwo implements FallibleTicTacToeStrategy {
+  FallibleTicTacToeStrategy first, second;
+  public Optional<Coord> chooseMove(TicTacToeModel model, Piece forWhom) {
+    Optional<Coord> ans = this.first.chooseMove(model, forWhom);
+    if (ans.isPresent()) return ans; // the first strategy succeeded
+    return this.second.chooseMove(model, forWhom);
+  }
+}
+Ultimately, our User wants a complete strategy, not one that can fail. So we need a way to convert our fallible strategies into an infallible one:
+
+class CompleteStrategyFromFallible implements InfallibleTicTacToeStrategy {
+  FallibleTicTacToeStrategy strategyToTry;
+  public Coord chooseMove(TicTacToeModel model, Piece forWhom) throws IllegalStateException {
+    Optional<Coord> maybeAns = this.strategyToTry.chooseMove(model, forWhom);
+    if (maybeAns.isPresent()) { return maybeAns.get(); }
+    throw new IllegalStateException("There are no possible moves chosen by this strategy!");
+  }
+}
+3 The decorator pattern
+The decorator pattern is similar to the strategy pattern in terms of how objects delegate from one to another, but the purpose is different. The canonical example of decorators is a UI widget library, such as Swing. We might have a basic JPanel class that just describes a rectangle of on-screen content. We might have a JScrollPanel class, which is a subclass of JPanel, that visually wraps around some other JPanel and adds scrollbars and the ability to scroll the view in one or more directions. Or a JSplitPanel, which surrounds two panels and produces a split-screen effect. Or a JGridPanel, or others... Each of these classes obeys a fairly sophisticated interface (all the methods of the base JPanel class), and then does two things: it provides some new functionality of its own, and delegates the rest of the functionality to inner panels. Visually, each surrounding panel decorates the inner ones by adding borders, scrollbars, splitters, etc. Just as with the strategy pattern, each class is responsible for one fragment of functionality: the complete functionality comes about by composing several decorators together around some base object.
+
+Unlike strategies, where there can often be useful strategies that do not need to delegate at all; decorators are all about the delegation. Also, unlike strategies, a decorator can never be a "partial" function — the underlying thing being decorated is already a complete thing, and the decoration adds more functionality on top of it, but there’s never a notion of an "incomplete" object.
+
+4 Strategies, Decorators and Inheritance
+When should you use a strategy pattern or a decorator pattern, instead of just using inheritance to customize behavior? After all, don’t subclasses specialize the behavior of their superclasses? For example, could we produce the same effect by having our User class just have an abstract method chooseMove, and then creating subclasses that define various possible implementations for that method?
+
+Yes...but only sometimes. The power of the strategy and decorator patterns comes from the dynamism inherent in ability to delegate from one simple strategy to the next, or from one decorator to its contained content. Rather than being fixed at compile time, we can use higher-order strategies to mix-and-match strategy pieces, or decorate panels into elaborate UIs, without having to hard-code those choices in advance. Additionally, the strategy or decorator classes are appealingly tiny, self-contained, and easy to read: they have very high cohesion, because they’re built to do exactly one thing and nothing else.
+
+1It’s not perfect — suppose two players were following this same strategy. Would the game end in a win, loss, or tie for the first player? How could you fix any problems you might encounter?

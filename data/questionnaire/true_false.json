@@ -1,0 +1,220 @@
+{
+  "metadata": {
+    "type": "true_false",
+    "count": 30,
+    "difficulty": "challenging",
+    "topics_covered": ["adapter", "observer", "mvc", "decorator", "strategy", "command", "factory", "inheritance", "composition", "testing"]
+  },
+  "questions": [
+    {
+      "id": "tf_001",
+      "topic": "adapter",
+      "question": "A class adapter pattern in Java can adapt multiple adaptee classes simultaneously by extending all of them, since Java supports multiple inheritance for classes.",
+      "answer": false,
+      "explanation": "Java does not support multiple inheritance for classes. A class adapter can only extend one adaptee class. To adapt multiple classes, you would need to use object adapters (composition) or extend one class while implementing multiple interfaces."
+    },
+    {
+      "id": "tf_002",
+      "topic": "adapter",
+      "question": "When implementing a two-way adapter that implements both IntSet1 and IntSet2 interfaces, the adapter must maintain two separate internal data structures - one for each interface's operations.",
+      "answer": false,
+      "explanation": "A two-way adapter typically wraps a single adaptee object and forwards requests from both interfaces to that same adaptee. It doesn't need separate data structures; it translates operations from both interfaces to work with one underlying representation."
+    },
+    {
+      "id": "tf_003",
+      "topic": "adapter",
+      "question": "When adapting an Enumeration to an Iterator, the remove() method cannot be meaningfully implemented because Enumeration has no concept of removal, so throwing UnsupportedOperationException is the appropriate response.",
+      "answer": true,
+      "explanation": "The Enumeration interface only provides hasMoreElements() and nextElement() - no removal capability. Since the underlying Enumeration cannot support removal, throwing UnsupportedOperationException is the documented and appropriate way to handle this in the Iterator interface."
+    },
+    {
+      "id": "tf_004",
+      "topic": "mvc",
+      "question": "In the MVC pattern, the Controller should directly modify the View's display elements to update the user interface when the Model changes.",
+      "answer": false,
+      "explanation": "The Controller should modify the Model, not the View directly. The View observes the Model and updates itself when the Model changes. Direct Controller-to-View updates bypass the Model and violate MVC separation of concerns."
+    },
+    {
+      "id": "tf_005",
+      "topic": "mvc",
+      "question": "A TicTacToeConsoleController that takes Readable and Appendable as constructor parameters demonstrates dependency injection, allowing the controller to be tested without requiring actual System.in and System.out.",
+      "answer": true,
+      "explanation": "This is a classic example of dependency injection. By accepting Readable/Appendable interfaces rather than concrete System.in/System.out, the controller can be tested with StringReader/StringBuilder, enabling automated testing without user interaction."
+    },
+    {
+      "id": "tf_006",
+      "topic": "mvc",
+      "question": "When a Controller's playGame() method catches an IOException from an Appendable, it should propagate the IOException to the caller rather than wrapping it in an unchecked exception.",
+      "answer": false,
+      "explanation": "The playGame() method should catch IOException and wrap it in an IllegalStateException (unchecked). This is because IO failures during game output represent an unrecoverable state, and forcing callers to handle checked exceptions for game logic is inappropriate."
+    },
+    {
+      "id": "tf_007",
+      "topic": "observer",
+      "question": "In the Observer pattern, if an Observer modifies the Subject during its update() callback, this can cause infinite recursion if the modification triggers another round of notifications.",
+      "answer": true,
+      "explanation": "This is a known pitfall of the Observer pattern. If an observer's update method modifies the subject, and that modification triggers notifyObservers(), a recursive loop can occur. Proper implementations guard against re-entrant notifications."
+    },
+    {
+      "id": "tf_008",
+      "topic": "decorator",
+      "question": "The Decorator pattern requires that the decorator class extend the concrete class being decorated rather than implement the same interface.",
+      "answer": false,
+      "explanation": "Decorators should implement the same interface as the component they decorate, not extend the concrete class. This allows decorators to wrap any implementation of the interface and enables flexible composition of multiple decorators."
+    },
+    {
+      "id": "tf_009",
+      "topic": "decorator",
+      "question": "A JScrollPane decorating a JPanel in Swing demonstrates the Decorator pattern because it adds scrolling functionality while delegating core panel behavior to the wrapped component.",
+      "answer": true,
+      "explanation": "Swing's container components like JScrollPane, JSplitPane, and JBorderPane are classic examples of the Decorator pattern. They add visual/functional decorations (scrollbars, borders, splits) while delegating to inner components."
+    },
+    {
+      "id": "tf_010",
+      "topic": "strategy",
+      "question": "A TicTacToeStrategy interface with a method Coord chooseMove(TicTacToeModel model, Piece forWhom) represents the Strategy pattern because it encapsulates an algorithm (move selection) that can be swapped at runtime.",
+      "answer": true,
+      "explanation": "This is a textbook Strategy pattern implementation. Different strategy implementations (random, minimax, heuristic) can be plugged in without changing the code that uses them, allowing algorithm selection at runtime."
+    },
+    {
+      "id": "tf_011",
+      "topic": "strategy",
+      "question": "Unlike the Decorator pattern, the Strategy pattern cannot have multiple strategies active simultaneously for the same context object.",
+      "answer": false,
+      "explanation": "While typically a context uses one strategy at a time for a given behavior, nothing prevents having multiple strategy fields for different behaviors, or changing strategies dynamically. The pattern doesn't inherently limit this."
+    },
+    {
+      "id": "tf_012",
+      "topic": "command",
+      "question": "The Command pattern enables undo functionality because each command object can encapsulate both the action to perform and the information needed to reverse that action.",
+      "answer": true,
+      "explanation": "Command objects can store pre-execution state or reverse operations. By maintaining a history stack of executed commands, an application can undo by calling each command's undo() method in reverse order."
+    },
+    {
+      "id": "tf_013",
+      "topic": "command",
+      "question": "In a turtle graphics application using the Command pattern, the SimpleTurtle's save() and restore() methods for position/heading stacks are themselves implementations of the Command pattern.",
+      "answer": false,
+      "explanation": "The save()/restore() methods use a Memento-like pattern (storing and restoring state), not the Command pattern. Command pattern would involve encapsulating move/turn operations as objects. These are complementary but distinct patterns."
+    },
+    {
+      "id": "tf_014",
+      "topic": "inheritance",
+      "question": "If IntSet2.addAll() internally calls add() for each element, and InstrumentedIntSet2 overrides both add() and addAll() to increment a counter, calling addAll() will double-count the elements added.",
+      "answer": true,
+      "explanation": "This is the classic fragile base class problem. If addAll() calls add() internally, and both are overridden to increment the counter, each element is counted twice: once in addAll() and once when add() is called. This is why composition is often preferred."
+    },
+    {
+      "id": "tf_015",
+      "topic": "inheritance",
+      "question": "Making a method final in a base class is a defensive programming technique that prevents subclasses from interfering with the base class's internal method interactions.",
+      "answer": true,
+      "explanation": "Marking methods as final prevents override, ensuring subclasses cannot change behavior that the base class depends on. This is part of 'designing for inheritance' - either document and allow extension, or prohibit it."
+    },
+    {
+      "id": "tf_016",
+      "topic": "composition",
+      "question": "An InstrumentedIntSet that holds a private IntSet delegate field and forwards all interface methods to that delegate is using composition, which avoids the fragile base class problem associated with inheritance.",
+      "answer": true,
+      "explanation": "Composition (has-a) via delegation avoids inheritance's tight coupling. Changes to the delegate's internal implementation won't affect the wrapper, since it only depends on the public interface, not internal method calling patterns."
+    },
+    {
+      "id": "tf_017",
+      "topic": "testing",
+      "question": "Using assertEquals(new int[] {3, 6}, new int[] {3, 6}) in JUnit will pass because the arrays contain the same elements.",
+      "answer": false,
+      "explanation": "This test will FAIL. In Java, arrays use reference equality for equals(), not content equality. Even though the contents are identical, they are different array objects. Use assertArrayEquals() for content comparison."
+    },
+    {
+      "id": "tf_018",
+      "topic": "testing",
+      "question": "A @Before annotated method in JUnit runs once before all tests in the class, initializing shared test fixtures.",
+      "answer": false,
+      "explanation": "@Before runs before EACH test method, not once before all. This ensures test isolation - each test starts with fresh fixtures. For one-time setup before all tests, use @BeforeClass with a static method."
+    },
+    {
+      "id": "tf_019",
+      "topic": "testing",
+      "question": "The annotation @Test(expected = IllegalArgumentException.class) will cause a test to pass if and only if the test method throws an IllegalArgumentException.",
+      "answer": true,
+      "explanation": "This annotation specifies that the test expects the given exception. The test passes only if that exact exception type is thrown; it fails if no exception is thrown or a different exception type is thrown."
+    },
+    {
+      "id": "tf_020",
+      "topic": "mvc",
+      "question": "Mock objects in testing serve the same purpose as the actual objects they replace and should implement identical behavior in all cases.",
+      "answer": false,
+      "explanation": "Mock objects provide controlled, predictable behavior for testing - they don't need identical behavior. They simulate specific scenarios (returning fixed values, throwing exceptions) to test how code handles various conditions."
+    },
+    {
+      "id": "tf_021",
+      "topic": "factory",
+      "question": "A static factory method like IntSet2Impl.singleton(int member) violates encapsulation because it exposes the concrete class name to clients.",
+      "answer": false,
+      "explanation": "Static factory methods can actually enhance encapsulation by returning interface types while hiding implementation details. The method could return any IntSet2 implementation. The concrete class name in the call doesn't necessarily expose internals."
+    },
+    {
+      "id": "tf_022",
+      "topic": "adapter",
+      "question": "An object adapter is generally preferred over a class adapter when the adaptee class is final or when you need to adapt multiple adaptees with the same adapter instance.",
+      "answer": true,
+      "explanation": "Object adapters use composition, so they can wrap final classes (which can't be extended). They're also more flexible - a single adapter can potentially work with different adaptee instances, while class adapters are fixed at compile time."
+    },
+    {
+      "id": "tf_023",
+      "topic": "decorator",
+      "question": "In the Decorator pattern, a concrete decorator must call the corresponding method on its wrapped component before or after adding its own behavior to maintain the chain of responsibility.",
+      "answer": true,
+      "explanation": "Decorators must delegate to the wrapped component to preserve base functionality. The decorator adds to (before/after) rather than replaces the component's behavior. Without delegation, the chain breaks and base functionality is lost."
+    },
+    {
+      "id": "tf_024",
+      "topic": "gui",
+      "question": "When implementing a graphical view in Swing, extending MouseAdapter instead of implementing MouseListener directly allows you to override only the mouse event methods you need.",
+      "answer": true,
+      "explanation": "MouseAdapter is an adapter class providing empty default implementations of all MouseListener methods. Extending it lets you override only relevant methods (e.g., mouseClicked) without implementing unused ones (mouseEntered, mouseExited, etc.)."
+    },
+    {
+      "id": "tf_025",
+      "topic": "gui",
+      "question": "In a Swing JPanel, calling repaint() directly triggers an immediate synchronous call to paintComponent().",
+      "answer": false,
+      "explanation": "repaint() schedules a paint request with Swing's event dispatch thread - it doesn't immediately call paintComponent(). The actual painting happens asynchronously when the EDT processes the request. This prevents UI threading issues."
+    },
+    {
+      "id": "tf_026",
+      "topic": "mvc",
+      "question": "The Readable interface in Java is more general than InputStream because it operates on characters rather than bytes, making it suitable for text-based controller input.",
+      "answer": true,
+      "explanation": "Readable is a character-based interface (read into CharBuffer), while InputStream is byte-based. For text processing like parsing user commands, Readable (implemented by Reader classes) is more appropriate and handles character encoding."
+    },
+    {
+      "id": "tf_027",
+      "topic": "inheritance",
+      "question": "Documenting a class as 'designed for inheritance' means explicitly specifying which methods call which other methods internally, so subclass authors know what overriding will affect.",
+      "answer": true,
+      "explanation": "Proper documentation for inheritance requires describing internal method dependencies (self-use patterns). Without this, subclass authors can't safely override methods without risking broken invariants or double-counting bugs."
+    },
+    {
+      "id": "tf_028",
+      "topic": "strategy",
+      "question": "A strategy that always throws UnsupportedOperationException is never useful and represents a design flaw.",
+      "answer": false,
+      "explanation": "A 'null strategy' or 'no-op strategy' that throws or does nothing can be useful as a default/placeholder, or to explicitly represent 'no behavior'. It's a valid implementation of the Null Object pattern combined with Strategy."
+    },
+    {
+      "id": "tf_029",
+      "topic": "testing",
+      "question": "When testing a method that should throw an exception for invalid input, using assertThrows with a lambda expression is preferred over @Test(expected=...) because it allows testing the exception's message and state.",
+      "answer": true,
+      "explanation": "assertThrows returns the thrown exception, allowing assertions on its message, cause, or other properties. @Test(expected=...) only verifies the exception type was thrown, not any details about it."
+    },
+    {
+      "id": "tf_030",
+      "topic": "composition",
+      "question": "Using composition with delegation requires more boilerplate code than inheritance because every interface method must be explicitly forwarded to the delegate.",
+      "answer": true,
+      "explanation": "This is a genuine trade-off. Composition requires writing forwarding methods for each interface method, which is verbose. However, this cost is often worth the flexibility and safety benefits. Some languages/IDEs can auto-generate delegation."
+    }
+  ]
+}
