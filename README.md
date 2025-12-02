@@ -216,7 +216,7 @@ We evaluate along two axes:
 
 ---
 
-## 7. High-Level Takeaways (for the writeup)
+## 7. High-Level Takeaways
 
 - **RAG + LoRA substantially improves FIM code completion**, reducing edit distance compared to baseline/RAG-only (especially on Gemma-2 2B).  
 - However, **quiz performance shows that pattern understanding/generalization is still limited**:
