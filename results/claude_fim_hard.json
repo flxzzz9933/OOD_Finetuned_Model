@@ -1,0 +1,87 @@
+{
+  "metadata": {
+    "model": "claude-3-5-sonnet-latest"
+  },
+  "answers": [
+    {
+      "id": "fim_hard_001",
+      "topic": "adapter",
+      "question": "",
+      "expected_answer": "// IntSet1 methods - translate element operations to set operations\n  @Override\n  public void add(int value) {\n    adaptee.unionWith(IntSet2Impl.singleton(value));\n  }\n\n  @Override\n  public void remove(int value) {\n    adaptee.differenceFrom(IntSet2Impl.singleton(value));\n  }\n\n  @Override\n  public boolean member(int value) {\n    return adaptee.isSupersetOf(IntSet2Impl.singleton(value));\n  }\n\n  @Override\n  public Iterator<Integer> iterator() {\n    return adaptee.asList().iterator();\n  }\n\n  // IntSet2 methods - delegate directly to adaptee\n  @Override\n  public void unionWith(IntSet2 other) {\n    adaptee.unionWith(other);\n  }\n\n  @Override\n  public void differenceFrom(IntSet2 other) {\n    adaptee.differenceFrom(other);\n  }\n\n  @Override\n  public boolean isSupersetOf(IntSet2 other) {\n    return adaptee.isSupersetOf(other);\n  }\n\n  @Override\n  public List<Integer> asList() {\n    return adaptee.asList();\n  }",
+      "model_answer": "",
+      "edit_distance": 912
+    },
+    {
+      "id": "fim_hard_002",
+      "topic": "adapter",
+      "question": "",
+      "expected_answer": "@Override\n  public boolean hasNext() {\n    return enumeration.hasMoreElements();\n  }\n\n  @Override\n  public T next() {\n    if (!hasNext()) {\n      throw new NoSuchElementException();\n    }\n    return enumeration.nextElement();\n  }\n\n  @Override\n  public void remove() {\n    throw new UnsupportedOperationException(\"Cannot remove from an Enumeration\");\n  }",
+      "model_answer": "",
+      "edit_distance": 353
+    },
+    {
+      "id": "fim_hard_003",
+      "topic": "mvc",
+      "question": "",
+      "expected_answer": "Objects.requireNonNull(model);\n    append(model.toString() + \"\\n\");\n    append(\"Enter move as row col (1-indexed):\\n\");\n\n    while (!model.isGameOver()) {\n      append(\"Player \" + model.getTurn() + \"'s turn:\\n\");\n      try {\n        int row = scan.nextInt() - 1;\n        int col = scan.nextInt() - 1;\n        model.move(row, col);\n        append(model.toString() + \"\\n\");\n      } catch (InputMismatchException e) {\n        append(\"Invalid input. Enter row and column as integers.\\n\");\n        scan.next(); // consume invalid token\n      } catch (IllegalArgumentException e) {\n        append(\"Invalid move: \" + e.getMessage() + \"\\n\");\n      }\n    }\n\n    if (model.getWinner() != null) {\n      append(\"Game over! Winner: \" + model.getWinner() + \"\\n\");\n    } else {\n      append(\"Game over! It's a tie!\\n\");\n    }",
+      "model_answer": "",
+      "edit_distance": 810
+    },
+    {
+      "id": "fim_hard_004",
+      "topic": "decorator",
+      "question": "",
+      "expected_answer": "@Override\n  public void add(int value) {\n    addCount++;\n    delegate.add(value);\n  }\n\n  @Override\n  public void addAll(Collection<Integer> values) {\n    addCount += values.size();\n    delegate.addAll(values);\n  }\n\n  @Override\n  public void remove(int value) {\n    delegate.remove(value);\n  }\n\n  @Override\n  public boolean member(int value) {\n    return delegate.member(value);\n  }\n\n  @Override\n  public Iterator<Integer> iterator() {\n    return delegate.iterator();\n  }",
+      "model_answer": "",
+      "edit_distance": 470
+    },
+    {
+      "id": "fim_hard_005",
+      "topic": "command",
+      "question": "",
+      "expected_answer": "@Override\n  public void execute() {\n    previousPosition = turtle.getPosition();\n    turtle.move(distance);\n  }\n\n  @Override\n  public void undo() {\n    if (previousPosition == null) {\n      throw new IllegalStateException(\"Cannot undo: command not executed\");\n    }\n    turtle.setPosition(previousPosition);\n  }\n\n  @Override\n  public boolean canUndo() {\n    return previousPosition != null;\n  }",
+      "model_answer": "",
+      "edit_distance": 394
+    },
+    {
+      "id": "fim_hard_006",
+      "topic": "strategy",
+      "question": "",
+      "expected_answer": "// Try corners first\n    for (int[] corner : CORNERS) {\n      if (isEmpty(model, corner[0], corner[1])) {\n        return new Coord(corner[0], corner[1]);\n      }\n    }\n\n    // Try center\n    if (isEmpty(model, CENTER[0], CENTER[1])) {\n      return new Coord(CENTER[0], CENTER[1]);\n    }\n\n    // Try edges\n    for (int[] edge : EDGES) {\n      if (isEmpty(model, edge[0], edge[1])) {\n        return new Coord(edge[0], edge[1]);\n      }\n    }\n\n    // No move available\n    return null;",
+      "model_answer": "",
+      "edit_distance": 482
+    },
+    {
+      "id": "fim_hard_007",
+      "topic": "mvc",
+      "question": "",
+      "expected_answer": "@Override\n  public void move(int row, int col) {\n    if (gameOver) {\n      throw new IllegalStateException(\"Game is already over\");\n    }\n    if (row < 0 || row > 2 || col < 0 || col > 2) {\n      throw new IllegalArgumentException(\"Position out of bounds\");\n    }\n    if (board[row][col] != null) {\n      throw new IllegalArgumentException(\"Cell already occupied\");\n    }\n\n    board[row][col] = turn;\n\n    if (checkWin(turn)) {\n      winner = turn;\n      gameOver = true;\n    } else if (isBoardFull()) {\n      gameOver = true;\n    } else {\n      turn = (turn == Player.X) ? Player.O : Player.X;\n    }\n  }\n\n  @Override\n  public Player getTurn() {\n    return turn;\n  }\n\n  @Override\n  public Player getWinner() {\n    return winner;\n  }\n\n  @Override\n  public boolean isGameOver() {\n    return gameOver;\n  }\n\n  @Override\n  public Player getPieceAt(int row, int col) {\n    if (row < 0 || row > 2 || col < 0 || col > 2) {\n      throw new IllegalArgumentException(\"Position out of bounds\");\n    }\n    return board[row][col];\n  }",
+      "model_answer": "",
+      "edit_distance": 1020
+    },
+    {
+      "id": "fim_hard_008",
+      "topic": "gui",
+      "question": "",
+      "expected_answer": "addMouseListener(new MouseAdapter() {\n      @Override\n      public void mouseClicked(MouseEvent e) {\n        int col = e.getX() / CELL_SIZE;\n        int row = e.getY() / CELL_SIZE;\n        if (row >= 0 && row < 3 && col >= 0 && col < 3) {\n          controller.handleCellClick(row, col);\n          repaint();\n        }\n      }\n    });\n  }\n\n  @Override\n  protected void paintComponent(Graphics g) {\n    super.paintComponent(g);\n\n    // Draw grid lines\n    g.setColor(Color.BLACK);\n    for (int i = 1; i < 3; i++) {\n      g.drawLine(i * CELL_SIZE, 0, i * CELL_SIZE, 3 * CELL_SIZE);\n      g.drawLine(0, i * CELL_SIZE, 3 * CELL_SIZE, i * CELL_SIZE);\n    }\n\n    // Draw pieces\n    for (int row = 0; row < 3; row++) {\n      for (int col = 0; col < 3; col++) {\n        Player p = model.getPieceAt(row, col);\n        if (p == Player.X) {\n          drawX(g, row, col);\n        } else if (p == Player.O) {\n          drawO(g, row, col);\n        }\n      }\n    }",
+      "model_answer": "",
+      "edit_distance": 948
+    },
+    {
+      "id": "fim_hard_009",
+      "topic": "observer",
+      "question": "",
+      "expected_answer": "public void addObserver(TicTacToeObserver observer) {\n    observers.add(Objects.requireNonNull(observer));\n  }\n\n  public void removeObserver(TicTacToeObserver observer) {\n    observers.remove(observer);\n  }\n\n  private void notifyObservers() {\n    for (TicTacToeObserver obs : observers) {\n      obs.update(this);\n    }\n  }\n\n  @Override\n  public void move(int row, int col) {\n    delegate.move(row, col);\n    notifyObservers();\n  }\n\n  @Override\n  public Player getTurn() {\n    return delegate.getTurn();\n  }\n\n  @Override\n  public Player getWinner() {\n    return delegate.getWinner();\n  }\n\n  @Override\n  public boolean isGameOver() {\n    return delegate.isGameOver();\n  }\n\n  @Override\n  public Player getPieceAt(int row, int col) {\n    return delegate.getPieceAt(row, col);\n  }",
+      "model_answer": "",
+      "edit_distance": 775
+    },
+    {
+      "id": "fim_hard_010",
+      "topic": "command",
+      "question": "",
+      "expected_answer": "public void executeCommand(TurtleCommand command) {\n    command.execute();\n    undoStack.push(command);\n    redoStack.clear(); // Clear redo stack on new command\n  }\n\n  public boolean canUndo() {\n    return !undoStack.isEmpty();\n  }\n\n  public boolean canRedo() {\n    return !redoStack.isEmpty();\n  }\n\n  public void undo() {\n    if (!canUndo()) {\n      throw new IllegalStateException(\"Nothing to undo\");\n    }\n    TurtleCommand command = undoStack.pop();\n    command.undo();\n    redoStack.push(command);\n  }\n\n  public void redo() {\n    if (!canRedo()) {\n      throw new IllegalStateException(\"Nothing to redo\");\n    }\n    TurtleCommand command = redoStack.pop();\n    command.execute();\n    undoStack.push(command);\n  }\n\n  public void clear() {\n    undoStack.clear();\n    redoStack.clear();\n  }",
+      "model_answer": "",
+      "edit_distance": 793
+    }
+  ]
+}

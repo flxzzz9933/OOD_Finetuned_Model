@@ -1,0 +1,167 @@
+{
+  "metadata": {
+    "model": "claude-3-5-sonnet-latest"
+  },
+  "answers": [
+    {
+      "id": "fim_easy_001",
+      "topic": "adapter",
+      "question": "",
+      "expected_answer": "adaptee.unionWith(IntSet2Impl.singleton(value));",
+      "model_answer": "",
+      "edit_distance": 48
+    },
+    {
+      "id": "fim_easy_002",
+      "topic": "adapter",
+      "question": "",
+      "expected_answer": "return adaptee.isSupersetOf(IntSet2Impl.singleton(value));",
+      "model_answer": "",
+      "edit_distance": 58
+    },
+    {
+      "id": "fim_easy_003",
+      "topic": "adapter",
+      "question": "",
+      "expected_answer": "return adaptee.asList().iterator();",
+      "model_answer": "",
+      "edit_distance": 35
+    },
+    {
+      "id": "fim_easy_004",
+      "topic": "adapter",
+      "question": "",
+      "expected_answer": "throw new UnsupportedOperationException(\"Cannot remove from Enumeration\");",
+      "model_answer": "",
+      "edit_distance": 74
+    },
+    {
+      "id": "fim_easy_005",
+      "topic": "mvc",
+      "question": "",
+      "expected_answer": "if (in == null || out == null) {\n      throw new IllegalArgumentException(\"Input and output cannot be null\");\n    }\n    this.in = in;\n    this.out = out;",
+      "model_answer": "",
+      "edit_distance": 153
+    },
+    {
+      "id": "fim_easy_006",
+      "topic": "mvc",
+      "question": "",
+      "expected_answer": "new TicTacToeConsoleController(new InputStreamReader(System.in),\n        System.out).playGame(new TicTacToeModel());",
+      "model_answer": "",
+      "edit_distance": 116
+    },
+    {
+      "id": "fim_easy_007",
+      "topic": "testing",
+      "question": "",
+      "expected_answer": "assertTrue(set.member(5));",
+      "model_answer": "",
+      "edit_distance": 26
+    },
+    {
+      "id": "fim_easy_008",
+      "topic": "testing",
+      "question": "",
+      "expected_answer": "assertThrows(IllegalArgumentException.class,\n        () -> { new HMSDuration(-1, 0, 0); });",
+      "model_answer": "",
+      "edit_distance": 91
+    },
+    {
+      "id": "fim_easy_009",
+      "topic": "strategy",
+      "question": "",
+      "expected_answer": "return available.get(random.nextInt(available.size()));",
+      "model_answer": "",
+      "edit_distance": 55
+    },
+    {
+      "id": "fim_easy_010",
+      "topic": "inheritance",
+      "question": "",
+      "expected_answer": "for (int z : other.asList()) {\n      if (!member(z)) {\n        return false;\n      }\n    }\n    return true;",
+      "model_answer": "",
+      "edit_distance": 107
+    },
+    {
+      "id": "fim_easy_011",
+      "topic": "decorator",
+      "question": "",
+      "expected_answer": "return delegate.member(value);",
+      "model_answer": "",
+      "edit_distance": 30
+    },
+    {
+      "id": "fim_easy_012",
+      "topic": "command",
+      "question": "",
+      "expected_answer": "double x = distance * Math.cos(Math.toRadians(heading));\n    double y = distance * Math.sin(Math.toRadians(heading));\n    position = new Position2D(position.getX() + x, position.getY() + y);",
+      "model_answer": "",
+      "edit_distance": 190
+    },
+    {
+      "id": "fim_easy_013",
+      "topic": "mvc",
+      "question": "",
+      "expected_answer": "board = new Player[3][3];\n    turn = Player.X;",
+      "model_answer": "",
+      "edit_distance": 46
+    },
+    {
+      "id": "fim_easy_014",
+      "topic": "testing",
+      "question": "",
+      "expected_answer": "assertFalse(set.member(10));",
+      "model_answer": "",
+      "edit_distance": 28
+    },
+    {
+      "id": "fim_easy_015",
+      "topic": "adapter",
+      "question": "",
+      "expected_answer": "for (int i : other.asList()) {\n      add(i);\n    }",
+      "model_answer": "",
+      "edit_distance": 50
+    },
+    {
+      "id": "fim_easy_016",
+      "topic": "mvc",
+      "question": "",
+      "expected_answer": "return asHms();",
+      "model_answer": "",
+      "edit_distance": 15
+    },
+    {
+      "id": "fim_easy_017",
+      "topic": "testing",
+      "question": "",
+      "expected_answer": "day = new HMSDuration(24, 0, 0);\n    ninetySeconds = new HMSDuration(0, 0, 90);",
+      "model_answer": "",
+      "edit_distance": 79
+    },
+    {
+      "id": "fim_easy_018",
+      "topic": "command",
+      "question": "",
+      "expected_answer": "heading += angleDegrees;",
+      "model_answer": "",
+      "edit_distance": 24
+    },
+    {
+      "id": "fim_easy_019",
+      "topic": "mvc",
+      "question": "",
+      "expected_answer": "return Long.compare(this.inSeconds(), that.inSeconds());",
+      "model_answer": "",
+      "edit_distance": 56
+    },
+    {
+      "id": "fim_easy_020",
+      "topic": "adapter",
+      "question": "",
+      "expected_answer": "for (int i : other.asList()) {\n      remove(i);\n    }",
+      "model_answer": "",
+      "edit_distance": 53
+    }
+  ]
+}
