@@ -46,8 +46,8 @@ data/
   fim_dataset.jsonl   # Final FIM dataset (train/val/test splits)
 
 checkpoints/
-  fim_llama_1b_lora/  # TinyLlama LoRA checkpoint (from teammate)
-  fim_gemma2_2b_lora/ # Gemma-2 2B LoRA checkpoint (this repo)
+  fim_llama_1b_lora/  # TinyLlama LoRA checkpoin
+  fim_gemma2_2b_lora/ # Gemma-2 2B LoRA checkpoint
 
 results/
   edit_distance_*.json          # FIM edit-distance metrics
