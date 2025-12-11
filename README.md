@@ -1,4 +1,4 @@
-# NLP Final Project – RAG + FIM Code Generation for CS3500
+# NLP CS4120 Final Project – RAG + FIM Code Generation Using CS3500 Notes
 
 This repo contains the code for our CS4120 NLP final project.
 
